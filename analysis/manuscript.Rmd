@@ -1,0 +1,143 @@
+---
+title: "Manuscript"
+author: "Anton Kalén"
+output: bookdown::html_document2
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(flextable)
+library(modelr)
+library(stringr)
+library(knitr)
+library(tidybayes)
+library(kableExtra)
+library(tidyr)
+library(glue)
+library(ggplot2)
+
+rounding <- function(x, digits = 2) {
+  sprintf(paste("%.", digits, "f", sep=""), x)
+}
+
+knitr::opts_chunk$set(echo = FALSE)
+options(knitr.table.format = "html", knitr.kable.NA = '')
+
+```
+
+# Results
+```{r model-comparison-setup, include=FALSE}
+# Load the fittet models
+drake::loadd(coef_table)
+drake::loadd(loo_compare)
+
+# Variable names
+var_names <- c(
+  `(Intercept)` = "Intercept",
+  `genderMen:std_log_points` = "Men: Country Points",
+  `genderWomen:std_log_points` = "Women: Country Points",
+  `genderMen:std_birth_quarter` = "Men: Birth Quarter",
+  `genderWomen:std_birth_quarter` = "Women: Birth Quarter",
+  `genderMen:std_log_points:std_birth_quarter` = "Men: Birth Quarter × Country Points",
+  `genderWomen:std_log_points:std_birth_quarter` = "Women: Birth Quarter × Country Points",
+  `Sigma[gender:group:(Intercept),(Intercept)]` = "Category",
+  `Sigma[gender:group:std_log_points,std_log_points]` = "Category × Country Points",
+  `Sigma[gender:group:std_birth_quarter,std_birth_quarter]` = "Category × Birth Quarter"
+)
+
+# Rename and reorder variables
+coef_table <- coef_table %>%
+  mutate(.variable = recode(.variable, !!!var_names)) %>% 
+  arrange(factor(.variable, levels = var_names))
+
+# Column names
+col_names <- c("", rep(c("Est", "LL", "UL"), times = 4))
+
+# Prep looic values
+loos <- loo_compare %>% 
+  as.data.frame() %>% 
+  tibble::rownames_to_column() %>% 
+  select(.value = rowname, value = elpd_diff, lower = se_diff) %>% 
+  pivot_longer(cols = c(value, lower), names_to = "names") %>% 
+  mutate(
+    value = if_else(names == "value", value * -2, value * 2),
+    names = paste(.value, names, sep = "."),
+    .variable = "Relative LOO-IC (SE)"
+  ) %>% 
+  select(-.value) %>% 
+  pivot_wider(names_from = names, values_from = value)
+```
+
+The estimated parameters and cross validation for the models are presented in Table 1. The approximate leave-one-out cross-validation suggests that Model 3 is expected to do the best job at predicting out-of-sample data. This is supported by the fact that the full 95% CI of the interaction between category and country lies outside 0, in contrast with the interactions between birt quarter and country points, as well as between coategory and birth quarter. All following results are based on Model 3.
+
+```{r model-comparison-table}
+coef_table %>% 
+  bind_rows(loos) %>% 
+  kable(
+    .,
+    col.names = col_names,
+    digits = 2,
+    caption = "Estimates and cross-validation for all models"
+  ) %>% 
+    kable_styling() %>% 
+    add_header_above(c(
+      "",
+      "", "90% CI" = 2,
+      "", "90% CI" = 2,
+      "", "90% CI" = 2,
+      "", "90% CI" = 2
+    )) %>% 
+    add_header_above(c(
+      "", 
+      "Model 1" = 3, 
+      "Model 2" = 3, 
+      "Model 3" = 3, 
+      "Model 4" = 3
+    )) %>% 
+    pack_rows(index = c("Fixed Effects" = 7, "Random Effects" = 3, "Cross-Validation"))
+  
+```
+
+## Gender
+```{r gender-diff}
+drake::loadd(fitted_draws_gender_model_3)
+
+gender_probs <- 
+  fitted_draws_gender_model_3 %>% 
+  ungroup() %>% 
+  select(-.row) %>% 
+  pivot_wider(names_from = gender, values_from = .value) %>% 
+  mutate(gender_diff = Men - Women) %>% 
+  ggplot(aes(x = Women, y = 1)) +
+    geom_halfeyeh()
+  
+  mean_hdci(Men, Women, gender_diff) %>% 
+  mutate_if(is.numeric, rounding) %>% 
+  as.list(.)
+```
+
+The average probability of reselection, averaging over all variables, for men is `r glue("{gender_probs[['Men']]}, 95%CI [{gender_probs[['Men.lower']]}, {gender_probs[['Men.upper']]}]")` and for women `r glue("{gender_probs[['Women']]}, 95%CI [{gender_probs[['Women.lower']]}, {gender_probs[['Women.upper']]}]")`.
+There is no clear difference in probability of beeing reselected between the genders (`r glue("{gender_probs[['gender_diff']]}, 95% CI [{gender_probs[['gender_diff.lower']]}, {gender_probs[['gender_diff.upper']]}]")`).
+
+# Debute and number of seasons
+
+```{r}
+
+fitted_draws_model_3 %>% 
+  modelr::data_grid(
+    gender,
+    group = "new",
+    std_log_points = 0,
+    std_birth_quarter = 0
+  ) %>% 
+  add_fitted_draws(model_3)
+
+fitted_draws_model_3 %>% 
+  ungroup() %>% 
+  separate(group, into = c("debute", "age")) %>% 
+  ggplot(aes(x = age, y = .value, color = debute)) +
+    stat_pointinterval(.width = c(.66, .95)) +
+    facet_grid(cols = vars(gender))
+    
+```
+
