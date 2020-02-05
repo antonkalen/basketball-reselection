@@ -1,17 +1,17 @@
 plan <- drake::drake_plan(
 
   # Import the data
-  raw_data = readr::read_csv(here::here("data", "nt_player_participations.csv")),
+  raw_data = readr::read_csv(file_in("data/nt_player_participations.csv")),
 
   # Prep data for model (create group and scale variables)
   data = data_preparation(raw_data = raw_data),
 
   # Set up the formulas for the models to run
   model_formulas = c(
-    formula(selected ~ 0 + gender + gender:std_log_points + gender:birth_quarter + (1|gender:category)),
-    formula(selected ~ 0 + gender + gender:std_log_points + gender:birth_quarter + gender:std_log_points:birth_quarter + (1|gender:category)),
-    formula(selected ~ 0 + gender + gender:std_log_points + gender:birth_quarter + (1 + std_log_points||gender:category)),
-    formula(selected ~ 0 + gender + gender:std_log_points + gender:birth_quarter + (1 + birth_quarter||gender:category))
+    formula(selected ~ 0 + gender + gender:c_log2_points + gender:birth_quarter + (1|gender:category)),
+    formula(selected ~ 0 + gender + gender:c_log2_points + gender:birth_quarter + gender:c_log2_points:birth_quarter + (1|gender:category)),
+    formula(selected ~ 0 + gender + gender:c_log2_points + gender:birth_quarter + (1 + c_log2_points||gender:category)),
+    formula(selected ~ 0 + gender + gender:c_log2_points + gender:birth_quarter + (1 + birth_quarter||gender:category))
   ),
 
   # Specify the priors to use in the models
@@ -61,37 +61,94 @@ plan <- drake::drake_plan(
 
   # Sample from the posterior prediction of model 3
 
-  fitted_draws_gender_model_3 = tidybayes::add_fitted_draws(
-    newdata = data.frame(
-      gender = c("Men", "Women"),
-      birth_quarter = 0,
-      std_log_points = 0,
-      category = "newgroup"
-    ),
+  draws_gender = get_draws(
     model = model_3,
-    scale = "response"
+    new_data = tidyr::expand(
+      data = data,
+      gender,
+      birth_quarter = 0,
+      c_log2_points = 0,
+      category
+    )
   ),
 
-  fitted_draws_model_3 = tidybayes::add_fitted_draws(
-      newdata = modelr::data_grid(
-        data = data,
-        gender,
-        birth_quarter = birth_quarter -2.5,
-        std_log_points = seq(
-          min(data$std_log_points),
-          max(data$std_log_points),
-          by = .1
-        ),
-        category
-      ),
-      model = model_3,
-      scale = "response"
+  draws_gender_avg = get_draws(
+    model = model_3,
+    re_formula = NA,
+    new_data = tidyr::expand(
+      data = data,
+      gender,
+      birth_quarter = 0,
+      c_log2_points = 0,
+      category = "00_00"
     )
+  ),
+
+  draws_category = get_draws(
+    model = model_3,
+    new_data = tidyr::expand(
+      data = data,
+      gender,
+      birth_quarter = 0,
+      c_log2_points = 0,
+      category
+    )
+  ),
+
+  draws_birth_quarter_avg = get_draws(
+    model = model_3,
+    re_formula = NA,
+    new_data = tidyr::expand(
+      data = data,
+      gender,
+      birth_quarter,
+      c_log2_points = 0,
+      category = "00_00"
+    )
+  ),
+
+  draws_birth_quarter = get_draws(
+    model = model_3,
+    new_data = tidyr::expand(
+      data = data,
+      gender,
+      birth_quarter,
+      c_log2_points = 0,
+      category
+    )
+  ),
+
+  draws_points_avg = get_draws(
+    model = model_3,
+    re_formula = NA,
+    new_data = tidyr::expand(
+      data = data,
+      tidyr::nesting(
+        gender,
+        c_log2_points,
+        birth_quarter = 0,
+        category = "00_00"
+      )
+    )
+  ),
+
+  draws_points = get_draws(
+    model = model_3,
+    new_data = tidyr::expand(
+      data = data,
+      tidyr::nesting(
+        gender,
+        c_log2_points
+      ),
+      birth_quarter = 0,
+      category
+    )
+  )
 
   # Knit manuscript
   # report = rmarkdown::render(
   #   knitr_in("analysis/manuscript.Rmd"),
-  #   output_file = file_out("analysis/manuscript.html"),
+  #   output_file = file_out("analysis/manuscript.pdf"),
   #   output_dir = "analysis",
   #   quiet = TRUE
   # )

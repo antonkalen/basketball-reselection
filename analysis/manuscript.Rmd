@@ -1,7 +1,9 @@
 ---
 title: "Manuscript"
-author: "Anton Kalén"
-output: bookdown::html_document2
+always_allow_html: true
+output:
+  bookdown::pdf_document2:
+    toc: false
 ---
 
 ```{r setup, include=FALSE}
@@ -16,16 +18,42 @@ library(tidyr)
 library(glue)
 library(ggplot2)
 
-rounding <- function(x, digits = 2) {
-  sprintf(paste("%.", digits, "f", sep=""), x)
-}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(knitr.kable.NA = '')
+theme_set(theme_minimal())
 
-knitr::opts_chunk$set(echo = FALSE)
-options(knitr.table.format = "html", knitr.kable.NA = '')
+# Smallest worthwile change
+swc_diff <- 0.03
+swc_rr <- 0.05
 
 ```
 
+# Method
+
+
 # Results
+The proportion of reselected players are presented in Table \@ref(tab:descriptive).
+
+```{r descriptive}
+drake::loadd(data)
+
+data %>% 
+  group_by(.data = ., gender, debute, player_age) %>% 
+  summarise(reselection = mean(selected)) %>% 
+  pivot_wider(names_from = player_age, values_from = reselection) %>% 
+  ungroup() %>% 
+  select(-gender) %>% 
+  kable(
+    caption = "Proportion of reselected players by debute and age",
+    digits = 2,
+    booktabs = T
+  ) %>% 
+  kable_styling() %>% 
+  pack_rows(index = c("Men" = 5, "Women" = 5))
+```
+
+## Model comparison
+
 ```{r model-comparison-setup, include=FALSE}
 # Load the fittet models
 drake::loadd(coef_table)
@@ -33,16 +61,17 @@ drake::loadd(loo_compare)
 
 # Variable names
 var_names <- c(
-  `(Intercept)` = "Intercept",
-  `genderMen:std_log_points` = "Men: Country Points",
-  `genderWomen:std_log_points` = "Women: Country Points",
-  `genderMen:std_birth_quarter` = "Men: Birth Quarter",
-  `genderWomen:std_birth_quarter` = "Women: Birth Quarter",
-  `genderMen:std_log_points:std_birth_quarter` = "Men: Birth Quarter × Country Points",
-  `genderWomen:std_log_points:std_birth_quarter` = "Women: Birth Quarter × Country Points",
-  `Sigma[gender:group:(Intercept),(Intercept)]` = "Category",
-  `Sigma[gender:group:std_log_points,std_log_points]` = "Category × Country Points",
-  `Sigma[gender:group:std_birth_quarter,std_birth_quarter]` = "Category × Birth Quarter"
+  `genderMen` = "Men: Intercept",
+  `genderWomen` = "Women: Intercept",
+  `genderMen:c_log2_points` = "Men: Country Points",
+  `genderWomen:c_log2_points` = "Women: Country Points",
+  `genderMen:birth_quarter` = "Men: Birth Quarter",
+  `genderWomen:birth_quarter` = "Women: Birth Quarter",
+  `genderMen:c_log2_points:birth_quarter` = "Men: Birth Quarter × Country Points",
+  `genderWomen:c_log2_points:birth_quarter` = "Women: Birth Quarter × Country Points",
+  `Sigma[gender:category:(Intercept),(Intercept)]` = "Category",
+  `Sigma[gender:category:c_log2_points,c_log2_points]` = "Category × Country Points",
+  `Sigma[gender:category:birth_quarter,birth_quarter]` = "Category × Birth Quarter"
 )
 
 # Rename and reorder variables
@@ -68,24 +97,25 @@ loos <- loo_compare %>%
   pivot_wider(names_from = names, values_from = value)
 ```
 
-The estimated parameters and cross validation for the models are presented in Table 1. The approximate leave-one-out cross-validation suggests that Model 3 is expected to do the best job at predicting out-of-sample data. This is supported by the fact that the full 95% CI of the interaction between category and country lies outside 0, in contrast with the interactions between birt quarter and country points, as well as between coategory and birth quarter. All following results are based on Model 3.
+The estimated parameters and cross validation for the models are presented in Table \@ref(tab:model-comparison). The approximate leave-one-out cross-validation suggests that Model 3 is expected to do the best job at predicting out-of-sample data. This is supported by the fact that the full 95% CI of the interaction between category and country lies outside 0, in contrast with the interactions between birt quarter and country points, as well as between coategory and birth quarter. All following results are based on Model 3.
 
-```{r model-comparison-table}
+```{r model-comparison}
 coef_table %>% 
   bind_rows(loos) %>% 
   kable(
     .,
     col.names = col_names,
     digits = 2,
-    caption = "Estimates and cross-validation for all models"
+    caption = "Estimates and cross-validation for all models",
+    booktabs = TRUE
   ) %>% 
-    kable_styling() %>% 
+    kable_styling(latex_options = c("scale_down")) %>% 
     add_header_above(c(
       "",
-      "", "90% CI" = 2,
-      "", "90% CI" = 2,
-      "", "90% CI" = 2,
-      "", "90% CI" = 2
+      "", "95% CI" = 2,
+      "", "95% CI" = 2,
+      "", "95% CI" = 2,
+      "", "95% CI" = 2
     )) %>% 
     add_header_above(c(
       "", 
@@ -94,50 +124,429 @@ coef_table %>%
       "Model 3" = 3, 
       "Model 4" = 3
     )) %>% 
-    pack_rows(index = c("Fixed Effects" = 7, "Random Effects" = 3, "Cross-Validation"))
+    pack_rows(index = c("Fixed Effects" = 8, "Random Effects" = 3, "Cross-Validation"))
   
 ```
 
 ## Gender
+
 ```{r gender-diff}
-drake::loadd(fitted_draws_gender_model_3)
+drake::loadd(draws_gender_avg)
 
-gender_probs <- 
-  fitted_draws_gender_model_3 %>% 
-  ungroup() %>% 
-  select(-.row) %>% 
-  pivot_wider(names_from = gender, values_from = .value) %>% 
-  mutate(gender_diff = Men - Women) %>% 
-  ggplot(aes(x = Women, y = 1)) +
-    geom_halfeyeh()
-  
+gender_probs <- draws_gender_avg %>% 
+  ungroup() %>%
+  pivot_wider(id_cols = .draw, names_from = gender, values_from = .value) %>% 
+  mutate(gender_diff = Men / Women) %>% 
   mean_hdci(Men, Women, gender_diff) %>% 
-  mutate_if(is.numeric, rounding) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 2), digits = 2, format = "f")) %>% 
   as.list(.)
-```
 
-The average probability of reselection, averaging over all variables, for men is `r glue("{gender_probs[['Men']]}, 95%CI [{gender_probs[['Men.lower']]}, {gender_probs[['Men.upper']]}]")` and for women `r glue("{gender_probs[['Women']]}, 95%CI [{gender_probs[['Women.lower']]}, {gender_probs[['Women.upper']]}]")`.
-There is no clear difference in probability of beeing reselected between the genders (`r glue("{gender_probs[['gender_diff']]}, 95% CI [{gender_probs[['gender_diff.lower']]}, {gender_probs[['gender_diff.upper']]}]")`).
-
-# Debute and number of seasons
-
-```{r}
-
-fitted_draws_model_3 %>% 
-  modelr::data_grid(
+gender_swc <- draws_gender_avg %>% 
+  compare_levels(
+    .value,
     gender,
-    group = "new",
-    std_log_points = 0,
-    std_birth_quarter = 0
+    `/`,
+    comparison = list(c("Men", "Women"))
   ) %>% 
-  add_fitted_draws(model_3)
+  summarise(prob = 100 * mean(between(.value, 1 - swc_rr, 1 + swc_rr))) %>% 
+  pull() %>% 
+  round(., digits = 1)
 
-fitted_draws_model_3 %>% 
-  ungroup() %>% 
-  separate(group, into = c("debute", "age")) %>% 
-  ggplot(aes(x = age, y = .value, color = debute)) +
-    stat_pointinterval(.width = c(.66, .95)) +
-    facet_grid(cols = vars(gender))
-    
 ```
 
+The probability of reselection, averaging over all variables, for men is `r glue("{gender_probs[['Men']]}, 95% CI [{gender_probs[['Men.lower']]}, {gender_probs[['Men.upper']]}]")` and for women `r glue("{gender_probs[['Women']]}, 95% CI [{gender_probs[['Women.lower']]}, {gender_probs[['Women.upper']]}]")`. 
+The probability that the relative risk between genders is less than ± `r swc_rr` is `r gender_swc`% (`r glue("Men / Women = {gender_probs[['gender_diff']]}, 95% CI [{gender_probs[['gender_diff.lower']]}, {gender_probs[['gender_diff.upper']]}]")`).
+
+The cumulative reselection probability for each gender and debute age is presented in Figure \@ref(fig:gender-comp-plot).
+
+```{r gender-comp-plot, fig.cap="Cumulative reselection probability for players born in first and last quarter of the year."}
+drake::loadd(draws_gender)
+
+draws_gender_y1 <- draws_gender %>% 
+  expand(
+    nesting(
+      gender,
+      debute,
+      player_age = debute,
+      .draw,
+      cum_prob = 1
+    )
+  )
+
+draws_gender %>% 
+  bind_rows(draws_gender_y1) %>% 
+  ggplot(aes(x = player_age, y = cum_prob, color = gender)) +
+    stat_lineribbon(alpha = .5, size = .5) +
+    facet_grid(cols = vars(debute)) +
+    scale_fill_brewer(palette = "Greys") +
+    theme(legend.position = "bottom")
+
+```
+
+## Debute age, player age, and number of seasons
+
+The cumulative reselection probability for each debute age and gender, compared to the average for same number of seasons is presented in Figure \@ref(fig:debute-vs-avg-nr-seasons), and compared to average for same player age in \@ref(fig:debute-vs-avg-player-age).
+
+```{}
+Vad vill vi ha med för statistik här?
+```
+
+
+```{r debute-vs-avg-nr-seasons, fig.cap="Cumulative reselection probability for each debute age compared to average for same number of seasons"}
+avg_cum_prob <- draws_gender_avg %>% 
+  expand(
+    nesting(
+      gender,
+      .draw,
+      .value,
+    ),
+    debute = 15:19,
+    player_age = 15:20
+  ) %>% 
+  filter(player_age >= debute) %>% 
+  group_by(gender, debute, .draw) %>% 
+  mutate(
+    .value = if_else(debute == player_age, 1, .value),
+    cum_prob = cumprod(.value)
+  )
+
+draws_gender %>% 
+  bind_rows(draws_gender_y1) %>% 
+  ggplot(aes(x = player_age, y = cum_prob)) +
+    stat_lineribbon(data = avg_cum_prob, size = .5, alpha = .5) +
+    stat_lineribbon(alpha = .5, size = .5, color = "Blue") +
+    facet_grid(cols = vars(debute), rows = vars(gender)) +
+    scale_fill_brewer(palette = "Greys") +
+    theme(legend.position = "bottom")
+
+```
+
+
+```{r debute-vs-avg-player-age, fig.cap="Cumulative reselection probability for each debute age compared to average for same player age"}
+draws_gender2 <- draws_gender %>% 
+  expand(
+    nesting(
+      gender,
+      player_age, 
+      .draw,
+      cum_prob
+    ),
+    debute = 15:20
+  ) %>% 
+  group_by(gender, player_age, debute) %>% 
+  summarise(cum_prob = mean(cum_prob))
+
+draws_gender %>% 
+  ggplot(aes(x = debute, y = cum_prob, color = debute)) +
+    geom_line(data = draws_gender2, aes(color = 1), size = .5, alpha = .5) +
+    stat_pointinterval(.width = c(.8, .95), point_size = 1) +
+    facet_grid(cols = vars(player_age), rows = vars(gender)) +
+    theme(legend.position = "bottom")
+
+```
+
+## Relative age effect
+
+```{r birth_quarter}
+drake::loadd(draws_birth_quarter_avg)
+drake::loadd(draws_birth_quarter)
+
+# For gender
+birth_quarter_rr <- draws_birth_quarter_avg %>% 
+  mutate(birth_quarter = birth_quarter + 2.5) %>% 
+  compare_levels(
+    .value,
+    birth_quarter,
+    `/`,
+    comparison = ordered,
+    draw_indices = c("gender", ".draw")
+  )
+
+birth_quarter_gender <- birth_quarter_rr %>% 
+  group_by(gender) %>% 
+  mean_hdi(.value) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 2), digits = 2, format = "f"))
+
+birth_quarter_gender_diff_draws <- birth_quarter_rr %>% 
+    compare_levels(
+    .value,
+    gender,
+    `-`,
+    comparison = list(c("Men", "Women")),
+    draw_indices = c(".draw")
+  )
+
+birth_quarter_gender_swc <- birth_quarter_gender_diff_draws %>% 
+  ungroup() %>% 
+  summarise(prob = 100 * mean(between(.value, -swc_diff, swc_diff))) %>% 
+  pull() %>% 
+  round(., digits = 1)
+  
+birth_quarter_gender_diff <- birth_quarter_gender_diff_draws %>% 
+  ungroup() %>% 
+  mean_hdi(.value) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 2), digits = 2, format = "f")) %>% 
+  as.list(.)
+
+# Compare q4 to q1
+q14_rr_draw <- draws_birth_quarter %>% 
+  mutate(birth_quarter = birth_quarter + 2.5) %>% 
+  filter(birth_quarter %in% c(1, 4)) %>% 
+  compare_levels(
+    .value,
+    birth_quarter,
+    `/`,
+    draw_indices = c("gender", "debute", "player_age", ".draw")
+  )
+
+qq14_swc <- q14_rr_draw %>% 
+  group_by(gender) %>% 
+  summarise(prob = 100 * mean(.value > 1 + swc_rr)) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 1), digits = 1, format = "f"))
+
+q14_rr <- q14_rr_draw %>% 
+  group_by(gender) %>% 
+  mean_hdi(.value) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 2), digits = 2, format = "f"))
+
+loos_print <- loos %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 0), digits = 0, format = "f"))
+```
+
+For each quarter later a player is born, the probability of beeing reselected is increased `r glue("{birth_quarter_gender[[1, '.value']]} times, 95% CI [{birth_quarter_gender[[1, '.lower']]}, {birth_quarter_gender[[1, '.upper']]}]")` for men, and `r glue("{birth_quarter_gender[[2, '.value']]} times, 95% CI [{birth_quarter_gender[[2, '.lower']]}, {birth_quarter_gender[[2, '.upper']]}]")` for women. The probability that the difference in effect between genders is less than `r swc_diff` is `r birth_quarter_gender_swc`% (`r glue("Men - Women = {birth_quarter_gender_diff[['.value']]}, 95% CI [{birth_quarter_gender_diff[['.lower']]}, {birth_quarter_gender_diff[['.upper']]}]")`).
+
+As shown in Table \@ref(tab:model-comparison), there is no clear interaction between birth quarter and country points in Model 2 and no interaction between birth quarter and category in Model 4. The predicted out-of-sample accuracy is worst for the two models including birth quarter interactions than the one without (LOO-IC Model 2 - Model 3 = `r glue("{loos_print$model_2.value}, SE = {loos_print$model_2.lower}")`; Model 4 - Model 3 = `r glue("{loos_print$model_4.value}, SE = {loos_print$model_4.lower}")`).
+
+The cumulative reselection probability for players born in the first and last quarter, respectively, are presented for each debute age and gender in Figure \@ref(fig:q14-plot). For men, players born in quarter 4 are on average `r glue("{q14_rr[[1, '.value']]} times, 95% CI [{q14_rr[[1, '.lower']]}, {q14_rr[[1, '.upper']]}]")` more likely to get reselected compared to players born in quarter 1, with `r qq14_swc[[1, 'prob']]`% probability of the effect beeing bigger than `r 1 + swc_rr`. For women, players born in quarter 4 are on average `r glue("{q14_rr[[2, '.value']]} times, 95% CI [{q14_rr[[2, '.lower']]}, {q14_rr[[2, '.upper']]}]")` more likely to get reselected compared to players born in quarter 1, with `r qq14_swc[[2, 'prob']]`% probability of the effect beeing bigger than `r 1 + swc_rr`.
+
+```{r q14-plot, fig.cap="Cumulative reselection probability for players born in first and last quarter of the year."}
+drake::loadd(draws_birth_quarter)
+
+draws_birth_quarter <- draws_birth_quarter %>% 
+  mutate(birth_quarter = birth_quarter + 2.5)
+
+draws_birth_quarter_y1 <- draws_birth_quarter %>% 
+  expand(
+    nesting(
+      gender,
+      debute,
+      player_age = debute,
+      .draw,
+      cum_prob = 1
+    ),
+     birth_quarter = c("q1", "q4"),
+  )
+
+draws_birth_quarter %>% 
+  filter(birth_quarter %in% c(1, 4)) %>% 
+  mutate(birth_quarter = paste0("q", birth_quarter)) %>% 
+  bind_rows(draws_birth_quarter_y1) %>% 
+  ggplot(aes(x = player_age, y = cum_prob, color = birth_quarter)) +
+    stat_lineribbon(alpha = .5, size = .5) +
+    facet_grid(cols = vars(debute), rows = vars(gender)) +
+    scale_fill_brewer(palette = "Greys") +
+    theme(legend.position = "bottom")
+
+```
+
+
+
+## Country points
+
+```{r country-setup}
+drake::loadd(draws_points)
+drake::loadd(draws_points_avg)
+
+draws_points <- draws_points %>% 
+  group_by(gender) %>% 
+  mutate(
+    log2_points = c_log2_points - min(c_log2_points),
+    points = 2^log2_points - 1
+  ) %>% 
+  ungroup()
+
+draws_points_avg <- draws_points_avg %>% 
+  group_by(gender) %>% 
+  mutate(
+    log2_points = c_log2_points - min(c_log2_points),
+    points = 2^log2_points - 1
+  ) %>% 
+  ungroup()
+```
+
+
+```{r country-avg}
+
+avg_points_min_max_draws <- draws_points_avg %>% 
+  filter(log2_points %in% c(0, 1)) %>% 
+  mutate(points = if_else(log2_points == 1, "max", "min")) %>% 
+  ungroup() %>% 
+  compare_levels(
+    .value,
+    points,
+    `/`,
+    comparison = list(c("max", "min")),
+    draw_indices = c("gender", ".draw")
+  ) 
+
+avg_points_min_max_rr <- avg_points_min_max_draws %>% 
+  group_by(gender) %>% 
+  mean_hdi(.value) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 2), digits = 2, format = "f"))
+
+avg_points_min_max_swc <- avg_points_min_max_draws %>% 
+  group_by(gender) %>% 
+  summarise(prob = 100 * mean(.value > 1 + swc_rr)) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 1), digits = 1, format = "f"))
+
+avg_points_min_max_gender_draws <- avg_points_min_max_draws %>% 
+  compare_levels(
+    .value,
+    gender
+  )
+
+avg_points_gender_diff <- avg_points_min_max_gender_draws %>% 
+  mean_hdi(.value) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 1), digits = 1, format = "f"))
+  
+avg_points_gender_swc <- avg_points_min_max_gender_draws %>% 
+  summarise(prob = 100 * mean(.value > swc_diff)) %>% 
+  mutate_if(is.numeric, ~formatC(round(., digits = 1), digits = 1, format = "f"))
+
+# Cumulative difference
+points_min_max_draws <- draws_points %>% 
+  mutate(.value = cum_prob) %>% 
+  filter(
+    log2_points %in% c(0, 1),
+    player_age == 20
+  ) %>% 
+  mutate(points = if_else(log2_points == 1, "max", "min")) %>% 
+  compare_levels(
+    .value,
+    points,
+    `/`,
+    comparison = list(c("max", "min")),
+    draw_indices = c("gender", "debute", ".draw")
+  )
+
+points_min_max_rr <- points_min_max_draws %>% 
+  group_by(gender, debute) %>% 
+  mean_hdi(.value)
+
+points_min_max_swc <- points_min_max_draws %>% 
+  group_by(gender, debute) %>% 
+  summarise(prob = 100 * mean(.value > 1 + swc_rr)) %>% 
+  mutate(prob = formatC(round(prob, digits = 1), digits = 1, format = "f"))
+  
+points_min_max_gender_draws <- points_min_max_draws %>% 
+  compare_levels(
+    .value,
+    gender,
+    draw_indices = c("gender", "debute", ".draw")
+  )
+
+points_gender_diff <- points_min_max_gender_draws %>% 
+  group_by(debute) %>% 
+  mean_hdi(.value)
+  
+points_gender_swc <- points_min_max_gender_draws %>% 
+  group_by(debute) %>% 
+  summarise(prob = 100 * mean(.value > swc_diff)) %>% 
+  mutate(prob = formatC(round(prob, digits = 1), digits = 1, format = "f"))
+```
+
+For men, players from top ranked countries are on average `r glue("{avg_points_min_max_rr[[1, '.value']]} times, 95% CI [{avg_points_min_max_rr[[1, '.lower']]}, {avg_points_min_max_rr[[1, '.upper']]}]")` more likely to get reselected than players from bottom ranked teams, with `r avg_points_min_max_swc[[1, 'prob']]`% probability of the effect beeing bigger than `r 1 + swc_rr`. For women, players from top ranked countries are on average `r glue("{avg_points_min_max_rr[[2, '.value']]} times, 95% CI [{avg_points_min_max_rr[[2, '.lower']]}, {avg_points_min_max_rr[[2, '.upper']]}]")` more likely to get reselected than players from bottom ranked teams, with `r avg_points_min_max_swc[[2, 'prob']]`% probability of the effect beeing bigger than `r 1 + swc_rr`. The probability that the relative risk for women beeing more than `r swc_diff` higher than for men is `r avg_points_gender_swc[[1, 'prob']]`% (`r glue("{avg_points_gender_diff[[1, 'gender']]} = {avg_points_gender_diff[[1, '.value']]}, 95% CI [{avg_points_gender_diff[[1, '.lower']]}, {avg_points_gender_diff[[1, '.upper']]}]")`).
+
+As shown in Table \@ref(tab:model-comparison), the effect of country points differs between the different categories in Model 3, and the predicted out-of-sample accuracy is better for Model 3 than any of the other models not including an interaction between country points and category. The relationship between country points and reselection probability for each category is presented in \@ref(fig:points-reselection).
+
+The difference in cumulative reselection probability between players in top and bottom ranked countries is presented in \@ref(fig:points-cum). The cumulative reselection probability for ramaining selected until and including age 20 is presented for each gender and debute age, together with the difference between genders in each debute age are presented in \@ref(tab:points-cum-comp). For men, the probability of players from top ranked countries having at least `r 1 + swc_rr` times higher probability of staying selected until age 20 than players from bottom ranked countries is, for debute age `r points_min_max_swc %>% filter(gender == "Men") %>% glue_data("{debute} = {prob}%", sep = ", ") %>% glue_collapse(sep = ", ")` and for women `r points_min_max_swc %>% filter(gender == "Women") %>% glue_data("{debute} = {prob}%", sep = ", ") %>% glue_collapse(sep = ", ")`. The probability that the relative risk for women beeing more than `r swc_diff` higher than for men is, for debute age `r points_gender_swc %>% glue_data("{debute} = {prob}%", sep = ", ") %>% glue_collapse(sep = ", ")`.
+
+```{r points-reselection, fig.cap="Relationship between country points and reselection probability."}
+
+draws_points %>%
+  ggplot(aes(x = log2_points, y = .value, color = gender)) +
+    stat_lineribbon(alpha = .5, size = .5) +
+    facet_grid(cols = vars(debute), rows = vars(player_age)) +
+    scale_fill_brewer(palette = "Greys") +
+    theme(legend.position = "bottom")
+```
+
+```{r points-cum, fig.cap="Cumulative reselection probability for top and bottom ranked countries."}
+draws_points_age_1 <- draws_points %>% 
+  group_by(gender) %>% 
+  filter(c_log2_points %in% c(min(c_log2_points), max(c_log2_points))) %>% 
+  expand(
+    nesting(
+      gender,
+      debute,
+      player_age = debute,
+      .draw,
+      c_log2_points,
+      cum_prob = 1
+    )
+  )
+
+draws_points %>%
+  group_by(gender, debute, player_age) %>% 
+  filter(c_log2_points %in% c(min(c_log2_points), max(c_log2_points))) %>%
+  bind_rows(draws_points_age_1) %>% 
+  mutate(
+    points = case_when(
+      c_log2_points == min(c_log2_points) ~ "Top",
+      c_log2_points == max(c_log2_points) ~ "Bottom"
+    )
+  ) %>%
+  ggplot(aes(x = player_age, y = cum_prob, color = points)) +
+    stat_lineribbon(alpha = .5, size = .5) +
+    facet_grid(cols = vars(debute), rows = vars(gender)) +
+    scale_fill_brewer(palette = "Greys") +
+    theme(legend.position = "bottom")
+```
+
+```{r points-cum-comp}
+
+points_debute_table <- points_min_max_rr %>% 
+  pivot_longer(cols = c(.value, .lower, .upper)) %>% 
+  unite(name, gender, name, sep = "") %>% 
+  pivot_wider() %>% 
+  left_join(points_gender_diff, by = "debute") %>% 
+  select(-starts_with(".width"), -starts_with(".point"), -starts_with(".interval"))
+
+col_names_points <- c(
+  "Debute",
+  "RR",
+  "LL",
+  "UL",
+  "RR",
+  "LL",
+  "UL",
+  "Diff",
+  "LL",
+  "UL"
+)
+
+points_debute_table %>% 
+  kable(
+    col.names = col_names_points,
+    digits = 2,
+    caption = "Relative risk of staying selected until age 20 between top and bottom ranked countries",
+    booktabs = TRUE
+  ) %>% 
+  kable_styling() %>% 
+  add_header_above(
+    c(
+      "",
+      "", "95% CI" = 2,
+      "", "95% CI" = 2,
+      "", "95% CI" = 2
+    )
+  ) %>% 
+  add_header_above(
+    c(
+      "",
+      "Men" = 3,
+      "Women" = 3,
+      "Women - Men" = 3
+    )
+  )
+```

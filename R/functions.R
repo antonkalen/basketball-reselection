@@ -33,12 +33,6 @@ data_preparation <- function(raw_data = raw_data) {
   # Create category variable from combination of debute and player_age
   data$category <- paste(data$debute, data$player_age, sep = "_")
 
-  # Log-transform the country_points
-  data$log_points <- log(1 + data$country_points)
-
-  # Standardise log points
-  data$std_log_points <- scale(data$log_points)
-
   # Create birth_quarter variable
   data$birth_quarter <- dplyr::case_when(
     data$birth_month <= 3 ~ 1,
@@ -63,7 +57,7 @@ format_observations <- function(data) {
     birth_year = unique(birth_year),
     birth_month = unique(birth_month),
     country = unique(country),
-    country_points = unique(country_points),
+    c_log2_points = unique(c_log2_points),
     debute = min(player_age),
     max_age = max(player_age),
   )
@@ -123,4 +117,80 @@ merge_coefs <- function(..., .width) {
   models <- list(...)
   coef_list <- purrr::map(models, get_coefs, .width = .width)
   purrr::reduce(coef_list, dplyr::full_join, by = ".variable")
+}
+
+# Add first seasons and cumulative probs to fitted draws
+get_draws <- function(model, new_data, re_formula = NULL) {
+
+  draws <- tidybayes::add_fitted_draws(
+    newdata = new_data,
+    model = model,
+    scale = "response",
+    re_formula = re_formula
+  )
+
+  draws <- dplyr::ungroup(draws)
+
+  draws <- tidyr::separate(
+    data = draws,
+    category,
+    into = c("debute", "player_age"),
+    sep = "_",
+    convert = TRUE
+  )
+
+  # draws <- create_first_season_draws(draws = draws)
+
+  draws <- calc_cum_prob(draws = draws)
+
+  draws
+}
+
+# Create first season to the fitted draws
+# create_first_season_draws <- function(draws = draws) {
+#   new_season <- dplyr::distinct(
+#     .data = draws,
+#     gender,
+#     birth_quarter,
+#     std_log_points,
+#     debute,
+#     .draw,
+#     .chain,
+#     .iteration
+#   )
+#   new_season <- dplyr::mutate(
+#     player_age = debute,
+#     .data = new_season,
+#     .row = 0,
+#     .value = 1
+#   )
+#   dplyr::bind_rows(draws, new_season)
+# }
+
+calc_cum_prob <- function(draws = draws) {
+  draws <- dplyr::arrange(
+    .data = draws,
+    .draw,
+    gender,
+    debute,
+    birth_quarter,
+    c_log2_points,
+    player_age
+  )
+
+  draws <- dplyr::group_by(
+    .data = draws,
+    .draw,
+    gender,
+    debute,
+    birth_quarter,
+    c_log2_points
+  )
+
+  draws <- dplyr::mutate(
+    .data = draws,
+    cum_prob = cumprod(.value)
+  )
+
+  dplyr::ungroup(draws)
 }
