@@ -24,7 +24,7 @@ data_preparation <- function(raw_data = raw_data) {
     selected = ifelse(player_age <= max_age, 1, 0)
   )
 
-  # Ungrooup dataframe
+  # Ungroup dataframe
   data <- dplyr::ungroup(data)
 
   # Remove first selection of each player (as it is not a reselection)
@@ -102,7 +102,7 @@ get_coefs <- function(model, .width) {
     -tidyselect::starts_with("b["), -tidyselect::ends_with("__")
   )
   draws <- tidybayes::gather_variables(draws)
-  draws <- tidybayes::mean_hdi(draws, .width = .width)
+  draws <- tidybayes::median_qi(draws, .width = .width)
   draws <- dplyr::select(draws, .variable, .value, .lower, .upper)
   model_name <- substitute(model)
   draws <- dplyr::rename_at(
@@ -117,6 +117,55 @@ merge_coefs <- function(..., .width) {
   models <- list(...)
   coef_list <- purrr::map(models, get_coefs, .width = .width)
   purrr::reduce(coef_list, dplyr::full_join, by = ".variable")
+}
+
+get_draws_coef <- function(model) {
+  draws <- tidybayes::gather_draws(
+    model = model,
+    genderMen,
+    genderWomen,
+    `genderMen:c_log2_points`,
+    `genderWomen:c_log2_points`,
+    `genderMen:birth_quarter`,
+    `genderWomen:birth_quarter`
+  )
+
+  draws <- tidyr::separate(
+    data = draws,
+    col = .variable,
+    into = c("gender", ".variable"),
+    sep = ":",
+    fill = "right")
+
+  draws$.variable <- ifelse(is.na(draws$.variable), "intercept", draws$.variable)
+
+  draws
+}
+
+get_draws_data <- function(model, new_data, re_formula = NULL) {
+
+  draws <- tidybayes::add_fitted_draws(
+    newdata = new_data,
+    model = model,
+    scale = "response",
+    re_formula = re_formula
+  )
+
+  draws <- dplyr::ungroup(draws)
+
+  draws <- tidyr::separate(
+    data = draws,
+    category,
+    into = c("debute", "player_age"),
+    sep = "_",
+    convert = TRUE
+  )
+
+  # draws <- create_first_season_draws(draws = draws)
+
+  draws <- calc_cum_prob_data(draws = draws)
+
+  draws
 }
 
 # Add first seasons and cumulative probs to fitted draws
@@ -166,6 +215,31 @@ get_draws <- function(model, new_data, re_formula = NULL) {
 #   )
 #   dplyr::bind_rows(draws, new_season)
 # }
+
+calc_cum_prob_data <- function(draws = draws) {
+  draws <- dplyr::arrange(
+    .data = draws,
+    .draw,
+    gender,
+    debute,
+    birth_quarter,
+    c_log2_points,
+    player_age
+  )
+
+  draws <- dplyr::group_by(
+    .data = draws,
+    .draw,
+    id
+  )
+
+  draws <- dplyr::mutate(
+    .data = draws,
+    cum_prob = cumprod(.value)
+  )
+
+  dplyr::ungroup(draws)
+}
 
 calc_cum_prob <- function(draws = draws) {
   draws <- dplyr::arrange(

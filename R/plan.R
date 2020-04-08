@@ -61,6 +61,8 @@ plan <- drake::drake_plan(
 
   # Sample from the posterior prediction of model 3
 
+  draws_coefs = get_draws_coef(model_3),
+
   draws_gender = get_draws(
     model = model_3,
     new_data = tidyr::expand(
