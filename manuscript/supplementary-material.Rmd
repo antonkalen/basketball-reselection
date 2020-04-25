@@ -1,0 +1,45 @@
+---
+output: pdf_document
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(kableExtra)
+library(knitr)
+
+# Options
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(knitr.kable.NA = '')
+
+# Load drake components
+drake::loadd(supplementary_table)
+```
+
+# Supplementary material {-}
+
+```{r model-comparison}
+
+supplementary_table %>% 
+  kable(
+    .,
+    col.names = c("", rep(c("Est", "LL", "UL"), times = 4)),
+    digits = 2,
+    caption = "Coefficients and cross-validation for all models",
+    booktabs = TRUE
+  ) %>% 
+  kable_styling() %>% 
+  add_header_above(c(
+      "",
+      "", "95% CI" = 2,
+      "", "95% CI" = 2,
+      "", "95% CI" = 2,
+      "", "95% CI" = 2
+    )) %>% 
+    add_header_above(c(
+      "", 
+      "Model 1" = 3, 
+      "Model 2" = 3, 
+      "Model 3" = 3, 
+      "Model 4" = 3
+    )) %>% 
+    pack_rows(index = c("Fixed Effects" = 8, "Random Effects" = 3, "Cross-Validation"))
+```
