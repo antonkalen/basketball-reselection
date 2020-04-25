@@ -1,0 +1,28 @@
+---
+title: "Data description"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(here)
+library(readr)
+
+raw_data <- read_csv(here("data", "nt_player_participations.csv"))
+data_dictionary <- read_csv(here("data", "data_dictionary.csv"))
+```
+
+The raw data used for this study is composed of `r nrow(raw_data)` observations (rows), and `r ncol(raw_data)` variables (columns).
+Each row is the participation of one player in a European basketball championship up until the age of 20.
+A player can participate in multiple championships the same year.
+
+## Data dictionary
+
+The data contains the following variables:
+
+```{r}
+knitr::kable(data_dictionary)
+```
+
