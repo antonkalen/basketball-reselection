@@ -1,0 +1,52 @@
+---
+title: "The influence of debut age, relative age effect and country rank on the re-selection process in European basketball youth national teams"
+date: "`r Sys.Date()`"
+always_allow_html: true
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+```
+
+This is repo for the article "The influence of debut age, relative age effect and country rank on the re-selection process in European basketball youth national teams".
+All code is written in `R`, uses [`drake`](https://docs.ropensci.org/drake/) to manage the workflow, and [`renv`](https://rstudio.github.io/renv) to manage needed packages.
+
+## Re-run the analysis
+
+The easiest way to run the analysis on your local computer is:
+
+1. Download the files by clicking on `OSF Storage (Germany - Frankfurt)` and then `Download as zip`.
+1. Open the project file `basketball-reselection.Rproj` in [RStudio](https://rstudio.com),
+1. Run `drake::r_make()` to re-run the analysis. Notice that it will only do so if there are parts of the workflow that are not up to date (which they should all be).
+
+You can check if all parts are up to date by running `drake::r_vis_drake_graph()`.
+If you wish to re-run the full analysis from scratch, run `drake::clean()` before `drake::r_make()`,
+
+## Project organisation
+
+The project has the following organisation:
+
+```
+├── Readme.md                     # This file which explains the project.
+├── _drake.R                      # The file drake::r_make() uses to run everything.
+├── basketball-reselection.Rproj  # RStudio project file.
+├── renv.lock                     # Info of package versions used.
+│
+├── R                             # Contains the analysis plan and all functions.
+├── data                          # Contains the data and data explanation for the analysis.
+├── manuscript                    # Contains the manuscript and files to produce it.
+├── output                        # Contains tables, figures and other results.
+├── .drake                        # Contains the workflow catch used by drake.
+└── renv                          # Contains files for renv to use correct package versions.
+```
+
+## Workflow information
+
+The workflow was last ran `r drake::drake_history(analyze = FALSE) %>% summarise(date = max(lubridate::as_date(built)))` and with the following session info.
+
+```{r}
+drake::drake_get_session_info()
+```
+
