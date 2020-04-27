@@ -1,7 +1,7 @@
 The influence of debut age, relative age effect and country rank on the
 re-selection process in European basketball youth national teams
 ================
-2020-04-25
+2020-04-27
 
 This is repo for the article “The influence of debut age, relative age
 effect and country rank on the re-selection process in European
@@ -43,7 +43,7 @@ The project has the following organisation:
 
 ## Workflow information
 
-The workflow was last ran 2020-04-25 and with the following session
+The workflow was last ran 2020-04-27 and with the following session
 info.
 
     ## R version 3.6.3 (2020-02-29)
@@ -58,15 +58,14 @@ info.
     ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
     ## 
     ## attached base packages:
-    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
+    ## [1] stats     graphics  grDevices datasets  utils     methods   base     
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] igraph_1.2.5      Rcpp_1.0.4        rstudioapi_0.11   knitr_1.28       
-    ##  [5] magrittr_1.5      hms_0.5.3         progress_1.2.2    R6_2.4.1         
-    ##  [9] rlang_0.4.5       fansi_0.4.1       stringr_1.4.0     storr_1.2.1      
-    ## [13] tools_3.6.3       parallel_3.6.3    xfun_0.12         cli_2.0.2        
-    ## [17] ellipsis_0.3.0    base64url_1.4     assertthat_0.2.1  digest_0.6.25    
-    ## [21] tibble_3.0.0      lifecycle_0.2.0   crayon_1.3.4      txtq_0.2.0       
-    ## [25] vctrs_0.2.4       fst_0.9.2         glue_1.3.2        drake_7.12.0     
-    ## [29] stringi_1.4.6     compiler_3.6.3    pillar_1.4.3      filelock_1.0.2   
-    ## [33] backports_1.1.6   prettyunits_1.1.1 pkgconfig_2.0.3
+    ##  [1] Rcpp_1.0.4        igraph_1.2.5      rstudioapi_0.11   magrittr_1.5     
+    ##  [5] hms_0.5.3         progress_1.2.2    R6_2.4.1          rlang_0.4.5      
+    ##  [9] fansi_0.4.1       storr_1.2.1       tools_3.6.3       parallel_3.6.3   
+    ## [13] cli_2.0.2         ellipsis_0.3.0    base64url_1.4     digest_0.6.25    
+    ## [17] assertthat_0.2.1  tibble_3.0.0      lifecycle_0.2.0   crayon_1.3.4     
+    ## [21] txtq_0.2.0        vctrs_0.2.4       fst_0.9.2         glue_1.3.2       
+    ## [25] drake_7.12.0      compiler_3.6.3    pillar_1.4.3      filelock_1.0.2   
+    ## [29] backports_1.1.6   prettyunits_1.1.1 renv_0.9.3        pkgconfig_2.0.3
