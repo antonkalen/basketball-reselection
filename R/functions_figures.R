@@ -1,8 +1,8 @@
 
 # Figure 1 ----------------------------------------------------------------
-create_figure_1 <- function(data, draws, .width) {
+create_figure_1 <- function(data, draws, .width, theme) {
   plot_data <- prep_data_figure_1(data = data, draws = draws, .width = .width)
-  ggplot2::ggplot(
+  plot <- ggplot2::ggplot(
     data = plot_data,
     mapping = ggplot2::aes(
       x = player_age,
@@ -11,19 +11,23 @@ create_figure_1 <- function(data, draws, .width) {
   ) +
     ggplot2::geom_line(
       ggplot2::aes(y = avg_cum_prob),
-      color = "gray70"
+      color = "gray70",
+      size = .3
     ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = .lower, ymax = .upper),
-      alpha = .3
+      alpha = .2
     ) +
-    ggplot2::geom_line() +
+    ggplot2::geom_line(
+      size = .3
+    ) +
     ggplot2::facet_grid(
       cols = ggplot2::vars(debut),
       rows = ggplot2::vars(gender),
       labeller = ggplot2::labeller(debut = debut_labels),
       switch = "y"
-    )
+    ) + theme
+  plot
 }
 
 # Function to prepare data for plotting figure 1
@@ -49,7 +53,7 @@ prep_data_figure_1 <- function(data, draws, .width) {
 # Function to prepare overall average cumulative re-selection for figure 1
 prepare_cum_prob <- function(data) {
   cum_reselection <- calculate_cumulative_reselection(data = data)
-  cum_reselection <- dplyr::filter(.data = cum_reselection, debut == "mean")
+  cum_reselection <- dplyr::filter(.data = cum_reselection, debut == "Mean")
   avg_cum <- tidyr::pivot_longer(
     data = cum_reselection,
     cols = `16`:`20`,
@@ -67,9 +71,9 @@ prepare_cum_prob <- function(data) {
 }
 
 # Figure 2 ----------------------------------------------------------------
-create_figure_2 <- function(draws, .width) {
+create_figure_2 <- function(draws, .width, theme) {
   plot_data <- prep_data_figure_2(draws = draws, .width = .width)
-  ggplot2::ggplot(
+  plot <- ggplot2::ggplot(
     data = plot_data,
     mapping = ggplot2::aes(
       x = player_age,
@@ -79,15 +83,24 @@ create_figure_2 <- function(draws, .width) {
   ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = .lower, ymax = .upper),
-      alpha = .3
+      show.legend = FALSE,
+      alpha = .2
     ) +
-    ggplot2::geom_line() +
+    ggplot2::geom_line(
+      size = .3
+    ) +
     ggplot2::facet_grid(
       cols = ggplot2::vars(debut),
       rows = ggplot2::vars(gender),
       labeller = ggplot2::labeller(debut = debut_labels),
       switch = "y"
-    )
+    ) +
+    ggplot2::guides(
+      linetype = ggplot2::guide_legend(
+        override.aes = list(fill = NA)
+      )
+    ) + theme
+  plot
 }
 
 # Function to prepare data for plotting figure 2
@@ -122,14 +135,13 @@ prep_data_figure_2 <- function(draws, .width) {
       birth_quarter == 1.5 ~ "Quarter 4",
     )
   )
-  plot_data
 }
 
 # Figure 3 ----------------------------------------------------------------
 
-create_figure_3 <- function(draws, .width) {
+create_figure_3 <- function(draws, .width, theme) {
   plot_data <- prep_data_figure_3(draws = draws, .width = .width)
-  ggplot2::ggplot(
+  plot <- ggplot2::ggplot(
     data = plot_data,
     mapping = ggplot2::aes(
       x = player_age,
@@ -139,15 +151,23 @@ create_figure_3 <- function(draws, .width) {
   ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = .lower, ymax = .upper),
-      alpha = .3
+      alpha = .2
     ) +
-    ggplot2::geom_line() +
+    ggplot2::geom_line(
+      size = .3
+    ) +
     ggplot2::facet_grid(
       cols = ggplot2::vars(debut),
       rows = ggplot2::vars(gender),
       labeller = ggplot2::labeller(debut = debut_labels),
       switch = "y"
-    )
+    ) +
+    ggplot2::guides(
+      linetype = ggplot2::guide_legend(
+        override.aes = list(fill = NA)
+      )
+    ) + theme
+  plot
 }
 
 # Function to prepare data for plotting figure 2

@@ -51,8 +51,13 @@ plan <- drake::drake_plan(
       base_family = "Helvetica"
     ) +
       ggplot2::theme(
-        legend.position = "bottom",
         legend.title = ggplot2::element_blank(),
+        legend.position = c(0, 0),
+        legend.justification = c("left", "bottom"),
+        legend.text = ggplot2::element_text(
+          size = ggplot2::rel(.7),
+          color = "gray20"
+        ),
         strip.placement = "outside",
         panel.border = ggplot2::element_rect(
           fill = NA,
@@ -60,7 +65,7 @@ plan <- drake::drake_plan(
           color = "gray40"
         ),
         axis.ticks = ggplot2::element_line(
-          size = .5,
+          size = .3,
           color = "gray40"
         ),
         axis.ticks.length = ggplot2::unit(.5, "mm"),
@@ -68,7 +73,7 @@ plan <- drake::drake_plan(
           size = ggplot2::rel(.7),
           color = "gray20",
           margin = ggplot2::margin(.5, .5, .5, .5, "mm")
-        )
+        ),
       ),
 
   # Data preparation --------------------------------------------------------
@@ -200,18 +205,21 @@ plan <- drake::drake_plan(
   figure_1 = create_figure_1(
     data = data,
     draws = draws_gender,
-    .width = ci_width
-  ) + plot_theme,
+    .width = ci_width,
+    theme = plot_theme
+  ),
 
   figure_2 = create_figure_2(
     draws = draws_birth_quarter,
-    .width = ci_width
-  ) + plot_theme,
+    .width = ci_width,
+    theme = plot_theme
+  ),
 
   figure_3 = create_figure_3(
     draws = draws_points,
-    .width = ci_width
-  ) + plot_theme,
+    .width = ci_width,
+    theme = plot_theme
+  ),
 
   # Text results
   birth_quarter_results = create_quarter_results(
@@ -256,22 +264,29 @@ plan <- drake::drake_plan(
       plot = plot,
       device = cairo_ps,
       path = "output/",
-      width = 180,
-      height = height,
+      width = 160,
+      height = 60,
       units = "mm",
       fallback_resolution = 1200
     ),
     transform = map(
       plot = c(figure_1, figure_2, figure_3),
-      filename = c("figure_1.eps", "figure_2.eps", "figure_3.eps"),
-      height = c(70, 80, 80)
+      filename = c("figure_1.eps", "figure_2.eps", "figure_3.eps")
     )
   ),
 
   # Manuscript
-  report = rmarkdown::render(
+  manuscript = rmarkdown::render(
     knitr_in("manuscript/manuscript.Rmd"),
     output_file = file_out("manuscript/manuscript.pdf"),
+    output_dir = "manuscript",
+    quiet = TRUE
+  ),
+
+  # Supplementary material
+  suppl_material = rmarkdown::render(
+    knitr_in("manuscript/supplementary-material.Rmd"),
+    output_file = file_out("manuscript/supplementary-material.pdf"),
     output_dir = "manuscript",
     quiet = TRUE
   )

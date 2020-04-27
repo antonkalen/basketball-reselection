@@ -165,13 +165,13 @@ prepare_coefs <- function(coefs, .width, var_names) {
     names_prefix = "model_",
     values_from = c(value, .lower, .upper)
   )
-  coef_summarised <- dplyr::arrange(
-    .data = coef_summarised,
-    factor(name, levels = var_names)
-  )
   coef_summarised <- dplyr::mutate(
     .data = coef_summarised,
     name = dplyr::recode(name, !!!var_names),
+  )
+  coef_summarised <- dplyr::arrange(
+    .data = coef_summarised,
+    factor(name, levels = var_names)
   )
   coef_summarised
 }

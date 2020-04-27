@@ -26,7 +26,7 @@ supplementary_table %>%
     caption = "Coefficients and cross-validation for all models",
     booktabs = TRUE
   ) %>% 
-  kable_styling() %>% 
+  kable_styling(latex_options = c("hold_position", "scale_down")) %>% 
   add_header_above(c(
       "",
       "", "95% CI" = 2,

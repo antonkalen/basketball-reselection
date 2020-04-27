@@ -146,7 +146,7 @@ calculate_cumulative_reselection <- function(data) {
     dplyr::vars(`16`:`20`),
     ~weighted.mean(., n, na.rm = TRUE)
   )
-  cumulative_debut$debut <- "mean"
+  cumulative_debut$debut <- "Mean"
 
   # Join together
   cumulative_table <- dplyr::bind_rows(cumulative_all, cumulative_debut)
@@ -180,13 +180,13 @@ create_table_2 <- function(coefs, .width, var_names) {
     suffix = c("", "_comp"))
 
   # Order and rename parameters
-  coef_table_full <- dplyr::arrange(
-    .data = coef_table_full,
-    factor(name, levels = names(var_names))
-  )
   coef_table_full <- dplyr::mutate(
     .data = coef_table_full,
     name = dplyr::recode(name, !!!var_names),
+  )
+  coef_table_full <- dplyr::arrange(
+    .data = coef_table_full,
+    factor(name, levels = var_names)
   )
   coef_table_full <- dplyr::select(
     .data = coef_table_full,
@@ -276,7 +276,22 @@ create_table_3 <- function(draws, .width) {
     .lower,
     .upper
   )
-  comps_table <- dplyr::ungroup(comps_table)
+  comps_table <- tidyr::pivot_wider(
+    data = comps_table,
+    names_from = gender,
+    values_from = c(relative_risk, .lower, .upper)
+  )
+  comps_table <- dplyr::select(
+    .data = comps_table,
+    Debut = debut,
+    `RR Men` = relative_risk_Men,
+    `LL Men` = .lower_Men,
+    `UL Men` = .upper_Men,
+    `RR Women` = relative_risk_Women,
+    `LL Women` = .lower_Women,
+    `UL Women` = .upper_Women
+  )
+  comps_table
 }
 
 # Table 4 -----------------------------------------------------------------
