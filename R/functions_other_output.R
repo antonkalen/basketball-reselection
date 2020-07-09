@@ -175,3 +175,154 @@ prepare_coefs <- function(coefs, .width, var_names) {
   )
   coef_summarised
 }
+
+
+# Supplementary figure 1 --------------------------------------------------
+
+create_supplementary_figure_1 <- function(draws, .width, theme) {
+  plot_data <- prep_data_create_supplementary_figure_1(
+    draws = draws,
+    .width = .width
+  )
+  plot <- ggplot2::ggplot(
+    data = plot_data,
+    mapping = ggplot2::aes(
+      x = player_age,
+      y = cum_prob,
+      linetype = birth_quarter
+    )
+  ) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = .lower, ymax = .upper),
+      show.legend = FALSE,
+      alpha = .2
+    ) +
+    ggplot2::geom_line(
+      size = .3
+    ) +
+    ggplot2::facet_grid(
+      cols = ggplot2::vars(debut),
+      rows = ggplot2::vars(gender),
+      labeller = ggplot2::labeller(debut = debut_labels),
+      switch = "y"
+    ) +
+    ggplot2::guides(
+      linetype = ggplot2::guide_legend(
+        override.aes = list(fill = NA)
+      )
+    ) + theme
+  plot
+}
+
+# Function to prepare data for plotting supplementary figure 1
+prep_data_create_supplementary_figure_1 <- function(draws, .width) {
+
+  # Calculate mean and ci for re-selection create a first season with prob = 1
+  first_year <- create_first_year_probs(
+    draws = draws,
+    gender,
+    debut,
+    birth_quarter
+  )
+  summarised_data <- prepare_plot_data(
+    draws = draws,
+    gender,
+    birth_quarter,
+    debut,
+    player_age,
+    .width = .width
+  )
+
+  # Join data and keep only first and last quarter
+  plot_data <- dplyr::bind_rows(summarised_data, first_year)
+  plot_data <- dplyr::filter(
+    .data = plot_data,
+    birth_quarter %in% c(-1.5, 1.5)
+  )
+  plot_data <- dplyr::mutate(
+    .data = plot_data,
+    birth_quarter = dplyr::case_when(
+      birth_quarter == -1.5 ~ "Quarter 1",
+      birth_quarter == 1.5 ~ "Quarter 4",
+    )
+  )
+}
+
+
+# Supplementary figure 2 --------------------------------------------------
+
+create_supplementary_figure_2 <- function(draws, .width, theme) {
+  plot_data <- prep_data_supplementary_figure_2(
+    draws = draws,
+    .width = .width
+  )
+  plot <- ggplot2::ggplot(
+    data = plot_data,
+    mapping = ggplot2::aes(
+      x = player_age,
+      y = cum_prob,
+      linetype = scaled_log2_points
+    )
+  ) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = .lower, ymax = .upper),
+      alpha = .2
+    ) +
+    ggplot2::geom_line(
+      size = .3
+    ) +
+    ggplot2::facet_grid(
+      cols = ggplot2::vars(debut),
+      rows = ggplot2::vars(gender),
+      labeller = ggplot2::labeller(debut = debut_labels),
+      switch = "y"
+    ) +
+    ggplot2::guides(
+      linetype = ggplot2::guide_legend(
+        override.aes = list(fill = NA)
+      )
+    ) + theme
+  plot
+}
+
+# Function to prepare data for plotting supplementary figure 2
+prep_data_supplementary_figure_2 <- function(draws, .width) {
+
+  # Calculate mean and ci for re-selection create a first season with prob = 1
+  first_year <- create_first_year_probs(
+    draws = draws,
+    gender,
+    debut,
+    scaled_log2_points
+  )
+  summarised_data <- prepare_plot_data(
+    draws = draws,
+    gender,
+    scaled_log2_points,
+    debut,
+    player_age,
+    .width = .width
+  )
+
+  # Join data and keep only first and last quarter
+  plot_data <- dplyr::bind_rows(summarised_data, first_year)
+  plot_data <- dplyr::group_by(.data = plot_data, gender)
+  plot_data <- dplyr::filter(
+    .data = plot_data,
+    scaled_log2_points %in% c(min(scaled_log2_points), max(scaled_log2_points))
+  )
+  plot_data <- dplyr::mutate(
+    .data = plot_data,
+    scaled_log2_points = dplyr::case_when(
+      scaled_log2_points == max(scaled_log2_points) ~ "Top ranked",
+      scaled_log2_points == min(scaled_log2_points) ~ "Bottom ranked"
+    ),
+    scaled_log2_points = factor(
+      scaled_log2_points,
+      levels = c("Top ranked", "Bottom ranked")
+    )
+  )
+  plot_data <- dplyr::ungroup(plot_data)
+  plot_data
+}
+

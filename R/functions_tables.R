@@ -243,6 +243,7 @@ make_coef_comp <- function(coefs, .width) {
 
 create_table_3 <- function(draws, .width) {
   draws <- dplyr::filter(.data = draws, player_age == 20)
+  draws$debut <- paste("Age", draws$debut)
   comps <- tidybayes::compare_levels(
     data = draws,
     cum_prob,
@@ -250,16 +251,16 @@ create_table_3 <- function(draws, .width) {
     fun = `/`,
     draw_indices = c("gender", ".draw"),
     comparison = list(
-      c("15", "16"),
-      c("15", "17"),
-      c("15", "18"),
-      c("15", "19"),
-      c("16", "17"),
-      c("16", "18"),
-      c("16", "19"),
-      c("17", "18"),
-      c("17", "19"),
-      c("18", "19")
+      c("Age 15", "Age 16"),
+      c("Age 15", "Age 17"),
+      c("Age 15", "Age 18"),
+      c("Age 15", "Age 19"),
+      c("Age 16", "Age 17"),
+      c("Age 16", "Age 18"),
+      c("Age 16", "Age 19"),
+      c("Age 17", "Age 18"),
+      c("Age 17", "Age 19"),
+      c("Age 18", "Age 19")
     )
   )
   comps_grouped <- dplyr::group_by(.data = comps, gender, debut)
@@ -294,12 +295,111 @@ create_table_3 <- function(draws, .width) {
   comps_table
 }
 
+
 # Table 4 -----------------------------------------------------------------
 
 create_table_4 <- function(draws, .width) {
 
   # Filter and prepare data
+  draws <- prepare_birth_quarter_draws(draws = draws)
+  draws$debut <- paste("Age", draws$debut)
+
+  # Calculate probabilities for q4 and q1
+  probabilities <- caclulate_birth_quarter_reselection(draws = draws, .width = .width)
+
+  # Calculate relative risk
+  relative_risk <- calculate_birth_quarter_rr(draws = draws, .width = .width)
+
+  # Join probabilities and relative risk
+  dplyr::left_join(probabilities, relative_risk, by = c("gender", "debut"))
+}
+
+prepare_birth_quarter_draws <- function(draws) {
+  draws_grouped <- dplyr::group_by(.data = draws, gender)
+  draws_filtered <- dplyr::filter(
+    .data = draws_grouped,
+    player_age == 20,
+    birth_quarter %in% c(min(birth_quarter), max(birth_quarter))
+  )
+  draws_filtered <- dplyr::mutate(
+    .data = draws_filtered,
+    birth_quarter = dplyr::case_when(
+      birth_quarter == min(birth_quarter) ~ "q1",
+      birth_quarter == max(birth_quarter) ~ "q4",
+    )
+  )
+  draws_filtered
+}
+
+caclulate_birth_quarter_reselection <- function(draws, .width) {
+  draws_grouped <- dplyr::group_by(.data = draws, gender, debut, birth_quarter)
+  reselection_probability <- tidybayes::mean_hdci(
+    .data = draws_grouped,
+    cum_prob,
+    .width = .width
+  )
+  reselection_probability <- dplyr::select(
+    .data = reselection_probability,
+    gender,
+    debut,
+    birth_quarter,
+    value = cum_prob,
+    .lower,
+    .upper
+  )
+  reselection_wide <- tidyr::pivot_wider(
+    data = reselection_probability,
+    names_from = birth_quarter,
+    values_from = c(value, .lower, .upper)
+  )
+  reselection_wide <- dplyr::select(
+    .data = reselection_wide,
+    gender,
+    debut,
+    value_q4,
+    .lower_q4,
+    .upper_q4,
+    value_q1,
+    .lower_q1,
+    .upper_q1
+  )
+  reselection_wide <- dplyr::ungroup(reselection_wide)
+  reselection_wide
+}
+
+calculate_birth_quarter_rr <- function(draws = draws, .width = .width) {
+  draw_comps <- tidybayes::compare_levels(
+    data = draws,
+    cum_prob,
+    by = birth_quarter,
+    fun = `/`,
+    draw_indices = c("gender", "debut", ".draw")
+  )
+  comps_grouped <- dplyr::group_by(.data = draw_comps, gender, debut)
+  relative_risk <- tidybayes::mean_hdci(
+    .data = comps_grouped,
+    cum_prob,
+    .width = .width
+  )
+  relative_risk <- dplyr::select(
+    .data = relative_risk,
+    gender,
+    debut,
+    rr = cum_prob,
+    .lower,
+    .upper
+  )
+  relative_risk <- dplyr::ungroup(relative_risk)
+  relative_risk
+}
+
+# Table 5 -----------------------------------------------------------------
+
+create_table_5 <- function(draws, .width) {
+
+  # Filter and prepare data
   draws <- prepare_ranking_draws(draws = draws)
+  draws$debut <- paste("Age", draws$debut)
 
   # Calculate probabilities for top and bottom ranks
   probabilities <- caclulate_ranking_reselection(draws = draws, .width = .width)

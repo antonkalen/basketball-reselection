@@ -1,7 +1,138 @@
 
 # Figure 1 ----------------------------------------------------------------
-create_figure_1 <- function(data, draws, .width, theme) {
-  plot_data <- prep_data_figure_1(data = data, draws = draws, .width = .width)
+
+create_figure_1_data <- function(data) {
+
+  # Remove multiple participations in single year
+  data <- dplyr::distinct(data, id, comp_year, .keep_all = TRUE)
+
+  # Calculate players age
+  data <- dplyr::mutate(data, player_age = comp_year - birth_year)
+
+  # Truncate participation with age >= 15
+  data <- dplyr::filter(data, player_age >= 15)
+
+  # Fix data format for survival analysis
+  data <- format_observations(data)
+
+  # Calculate birth quarter
+  data$birth_quarter <- dplyr::case_when(
+    data$birth_month <= 3 ~ 1,
+    data$birth_month <= 6 ~ 2,
+    data$birth_month <= 9 ~ 3,
+    data$birth_month <= 12 ~ 4,
+  )
+
+  # Remove seasons not selected
+  data <- dplyr::filter(
+    .data = data,
+    player_age <= max_age
+  )
+
+  # Create columns for initial selection, re-selection and de-selection
+  data$initial_selection <- data$player_age == data$debut
+  data$participation <- TRUE
+  data$re_selection <- data$player_age < data$max_age
+  data$de_selection <- data$player_age == data$max_age
+
+  # Count total and per quarter for each of the columns of the flowchart
+  results <- list(
+    initial_selection = make_column_data(data, initial_selection),
+    participation = make_column_data(data, participation),
+    re_selection = make_column_data(data, re_selection),
+    de_selection = make_column_data(data, de_selection)
+  )
+
+  # Bind above together to one dataframe
+  results <- purrr::reduce(
+    results,
+    dplyr::full_join,
+    by = c("gender", "player_age")
+  )
+
+  # Calculate total number of players per gender
+  per_player <- dplyr::distinct(.data = data, id, gender)
+  n_men <- sum(per_player$gender == "Men")
+  n_women <- sum(per_player$gender == "Women")
+
+  results <- dplyr::mutate(
+    .data = results,
+    gender = dplyr::case_when(
+      gender == "Men" ~ paste0(gender, " (n = ", n_men, ")"),
+      gender == "Women" ~ paste0(gender, " (n = ", n_women, ")"),
+    )
+  )
+  results <- calculate_percentages(results)
+  results
+}
+
+make_column_data <- function(data, column) {
+  data <- dplyr::filter(data, {{ column }})
+  data <- dplyr::group_by(
+    .data = data,
+    gender,
+    player_age
+  )
+  result <- dplyr::summarise(
+    .data = data,
+    .groups = "keep",
+    "{{column}}_n" := dplyr::n(),
+    "{{column}}_Q1" := sum(birth_quarter == 1),
+    "{{column}}_Q2" := sum(birth_quarter == 2),
+    "{{column}}_Q3" := sum(birth_quarter == 3),
+    "{{column}}_Q4" := sum(birth_quarter == 4)
+  )
+
+  result
+}
+
+make_participation_data <- function(data) {
+
+  data <- dplyr::group_by(
+    .data = data_initial_selection,
+    gender,
+    player_age
+  )
+
+  initial_selection <- dplyr::summarise(
+    .data = data_initial_selection,
+    .groups = "keep",
+    n = dplyr::n(),
+    Q1 = sum(birth_quarter == 1),
+    Q2 = sum(birth_quarter == 2),
+    Q3 = sum(birth_quarter == 3),
+    Q4 = sum(birth_quarter == 4)
+  )
+
+  initial_selection
+}
+
+calculate_percentages <- function(results) {
+  results <- dplyr::ungroup(results)
+  dplyr::mutate(
+    .data = results,
+    initial_selection_Q1 = initial_selection_Q1 / initial_selection_n * 100,
+    initial_selection_Q2 = initial_selection_Q2 / initial_selection_n * 100,
+    initial_selection_Q3 = initial_selection_Q3 / initial_selection_n * 100,
+    initial_selection_Q4 = initial_selection_Q4 / initial_selection_n * 100,
+    re_selection_Q1 = re_selection_Q1 / participation_Q1 * 100,
+    re_selection_Q2 = re_selection_Q2 / participation_Q2 * 100,
+    re_selection_Q3 = re_selection_Q3 / participation_Q3 * 100,
+    re_selection_Q4 = re_selection_Q4 / participation_Q4 * 100,
+    de_selection_Q1 = de_selection_Q1 / participation_Q1 * 100,
+    de_selection_Q2 = de_selection_Q2 / participation_Q2 * 100,
+    de_selection_Q3 = de_selection_Q3 / participation_Q3 * 100,
+    de_selection_Q4 = de_selection_Q4 / participation_Q4 * 100,
+    participation_Q1 = participation_Q1 / participation_n * 100,
+    participation_Q2 = participation_Q2 / participation_n * 100,
+    participation_Q3 = participation_Q3 / participation_n * 100,
+    participation_Q4 = participation_Q4 / participation_n * 100
+  )
+}
+
+# Figure 2 ----------------------------------------------------------------
+create_figure_2 <- function(data, draws, .width, theme) {
+  plot_data <- prep_data_figure_2(data = data, draws = draws, .width = .width)
   plot <- ggplot2::ggplot(
     data = plot_data,
     mapping = ggplot2::aes(
@@ -30,8 +161,8 @@ create_figure_1 <- function(data, draws, .width, theme) {
   plot
 }
 
-# Function to prepare data for plotting figure 1
-prep_data_figure_1 <- function(data, draws, .width) {
+# Function to prepare data for plotting figure 2
+prep_data_figure_2 <- function(data, draws, .width) {
 
   # Calculate mean and ci for re-selection create a first season with prob = 1
   first_year <- create_first_year_probs(draws = draws, gender, debut)
@@ -50,7 +181,7 @@ prep_data_figure_1 <- function(data, draws, .width) {
   plot_data
 }
 
-# Function to prepare overall average cumulative re-selection for figure 1
+# Function to prepare overall average cumulative re-selection for figure 2
 prepare_cum_prob <- function(data) {
   cum_reselection <- calculate_cumulative_reselection(data = data)
   cum_reselection <- dplyr::filter(.data = cum_reselection, debut == "Mean")
@@ -58,7 +189,7 @@ prepare_cum_prob <- function(data) {
     data = cum_reselection,
     cols = `16`:`20`,
     names_to = "player_age",
-    names_ptypes = list(player_age = integer()),
+    names_transform = list(player_age = as.integer),
     values_to = "avg_cum_prob"
   )
   avg_cum$avg_cum_prob <- avg_cum$avg_cum_prob / 100
@@ -68,147 +199,6 @@ prepare_cum_prob <- function(data) {
     debut = 15:19
   )
   avg_cum
-}
-
-# Figure 2 ----------------------------------------------------------------
-create_figure_2 <- function(draws, .width, theme) {
-  plot_data <- prep_data_figure_2(draws = draws, .width = .width)
-  plot <- ggplot2::ggplot(
-    data = plot_data,
-    mapping = ggplot2::aes(
-      x = player_age,
-      y = cum_prob,
-      linetype = birth_quarter
-    )
-  ) +
-    ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = .lower, ymax = .upper),
-      show.legend = FALSE,
-      alpha = .2
-    ) +
-    ggplot2::geom_line(
-      size = .3
-    ) +
-    ggplot2::facet_grid(
-      cols = ggplot2::vars(debut),
-      rows = ggplot2::vars(gender),
-      labeller = ggplot2::labeller(debut = debut_labels),
-      switch = "y"
-    ) +
-    ggplot2::guides(
-      linetype = ggplot2::guide_legend(
-        override.aes = list(fill = NA)
-      )
-    ) + theme
-  plot
-}
-
-# Function to prepare data for plotting figure 2
-prep_data_figure_2 <- function(draws, .width) {
-
-  # Calculate mean and ci for re-selection create a first season with prob = 1
-  first_year <- create_first_year_probs(
-    draws = draws,
-    gender,
-    debut,
-    birth_quarter
-  )
-  summarised_data <- prepare_plot_data(
-    draws = draws,
-    gender,
-    birth_quarter,
-    debut,
-    player_age,
-    .width = .width
-  )
-
-  # Join data and keep only first and last quarter
-  plot_data <- dplyr::bind_rows(summarised_data, first_year)
-  plot_data <- dplyr::filter(
-    .data = plot_data,
-    birth_quarter %in% c(-1.5, 1.5)
-  )
-  plot_data <- dplyr::mutate(
-    .data = plot_data,
-    birth_quarter = dplyr::case_when(
-      birth_quarter == -1.5 ~ "Quarter 1",
-      birth_quarter == 1.5 ~ "Quarter 4",
-    )
-  )
-}
-
-# Figure 3 ----------------------------------------------------------------
-
-create_figure_3 <- function(draws, .width, theme) {
-  plot_data <- prep_data_figure_3(draws = draws, .width = .width)
-  plot <- ggplot2::ggplot(
-    data = plot_data,
-    mapping = ggplot2::aes(
-      x = player_age,
-      y = cum_prob,
-      linetype = scaled_log2_points
-    )
-  ) +
-    ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = .lower, ymax = .upper),
-      alpha = .2
-    ) +
-    ggplot2::geom_line(
-      size = .3
-    ) +
-    ggplot2::facet_grid(
-      cols = ggplot2::vars(debut),
-      rows = ggplot2::vars(gender),
-      labeller = ggplot2::labeller(debut = debut_labels),
-      switch = "y"
-    ) +
-    ggplot2::guides(
-      linetype = ggplot2::guide_legend(
-        override.aes = list(fill = NA)
-      )
-    ) + theme
-  plot
-}
-
-# Function to prepare data for plotting figure 2
-prep_data_figure_3 <- function(draws, .width) {
-
-  # Calculate mean and ci for re-selection create a first season with prob = 1
-  first_year <- create_first_year_probs(
-    draws = draws,
-    gender,
-    debut,
-    scaled_log2_points
-  )
-  summarised_data <- prepare_plot_data(
-    draws = draws,
-    gender,
-    scaled_log2_points,
-    debut,
-    player_age,
-    .width = .width
-  )
-
-  # Join data and keep only first and last quarter
-  plot_data <- dplyr::bind_rows(summarised_data, first_year)
-  plot_data <- dplyr::group_by(.data = plot_data, gender)
-  plot_data <- dplyr::filter(
-    .data = plot_data,
-    scaled_log2_points %in% c(min(scaled_log2_points), max(scaled_log2_points))
-  )
-  plot_data <- dplyr::mutate(
-    .data = plot_data,
-    scaled_log2_points = dplyr::case_when(
-      scaled_log2_points == max(scaled_log2_points) ~ "Top ranked",
-      scaled_log2_points == min(scaled_log2_points) ~ "Bottom ranked"
-    ),
-    scaled_log2_points = factor(
-      scaled_log2_points,
-      levels = c("Top ranked", "Bottom ranked")
-    )
-  )
-  plot_data <- dplyr::ungroup(plot_data)
-  plot_data
 }
 
 # General helper functions ------------------------------------------------

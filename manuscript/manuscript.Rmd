@@ -1,12 +1,17 @@
 ---
-author: "[Blinded manuscript for peer review]"
-title: "The influence of debut age, relative age effect and country rank on the re-selection process in European basketball youth national teams"
+author:
+  - Anton Kalén\thanks{Faculty of Education and Sport Sciences, University of Vigo, Pontevedra, Spain}
+  - Erik Lundkvist\thanks{Performance and training unit, The Swedish School of Sport and Health Science, Stockholm, Sweden}
+  - Ezequiel Rey\footnotemark[1]
+  - Andreas Ivarsson\thanks{Center of Research on Welfare, Health and Sport, Halmstad University, Halmstad, Sweden}
+  - Alexandra Pérez-Ferreirós\footnotemark[1] \thanks{CiberObn. Unit of Pediatric Nutrition and Metabolism, University Clinical Hospital of Santiago, RG Pediatric Nutrition (IDIS-CHUS), Santiago de Compostela, Spain}
+title: "The influence of initial selection age, relative age effect and country long-term performance on the re-selection process in European basketball youth national teams"
 abstract: |
-  The aims of the study were to: (a) analyse the re-selection patterns in European youth basketball national teams, and (b) investigate how they are influenced by the debut age of the players, relative age effect, and long-term performance of the country at the youth level.
-  The sample consisted of 8362 basketball players (n men = 5038, n women = 3324) born 1988–1997 who have participated in at least one U16, U18 or U20 European youth basketball championship between 2004 and 2017.
-  The results from the survival analyses showed that around 75% of male, and 80% of female players participating in a championship were re-selected the following year.
-  Also, debut age, relative age effect, and the country rank influenced the re-selection rates, with relationships were different between men and women.
-  To conclude the results of the present study, show that the re-selection process by which players progress in European youth national basketball teams is complex and influenced by several different factors.
+  The aims of the study were to: (a) analyse the re-selection patterns in European youth basketball national teams, and (b) investigate how the chance of re-selection is influenced by the initial selection age and relative age of the players, as well as the long-term performance of the country at the youth level.
+  The sample consisted of 8362 basketball players (5038 men, 3324 women) born 1988–1997 who have participated in at least one U16, U18 or U20 European youth basketball championship between 2004 and 2017.
+  The results from the survival analysis showed that around 75% of male and 80% of female players participating in a championship were re-selected the following year.
+  Also, initial selection age, relative age effect, and the country long-term performance influenced the re-selection rates, with relationships being different between men and women.
+  To conclude, the results of the present study show that the re-selection process by which players progress in European youth national basketball teams is complex and influenced by several different factors.
 keywords: "talent identification; talent development; selection; team sport; athlete development pathways; survival analysis"
 bibliography: references.bib
 csl: apa.csl
@@ -23,6 +28,7 @@ library(kableExtra)
 library(tidyr)
 library(glue)
 library(knitr)
+library(ggplot2)
 
 # Options
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.pos = 'b')
@@ -31,15 +37,15 @@ options(knitr.kable.NA = '')
 
 # Load drake components
 drake::loadd(data)
+drake::loadd(raw_data)
 drake::loadd(model_3)
 drake::loadd(table_1)
 drake::loadd(table_2)
 drake::loadd(table_3)
 drake::loadd(table_4)
-drake::loadd(figure_1)
+drake::loadd(table_5)
+drake::loadd(figure_1_data)
 drake::loadd(figure_2)
-drake::loadd(figure_3)
-drake::loadd(birth_quarter_results)
 
 ```
 
@@ -47,63 +53,76 @@ drake::loadd(birth_quarter_results)
 
 # Introduction
 
-Talent identification and development is of primary interest for clubs and federations, in their search for developing players and achieving success.
-National sporting organizations and federations are investing large amounts of money in creating programs and pathways to develop talent.
+Talent identification and development is of primary interest for clubs and federations in their pursuit to develop elite players and achieving success.
+National sporting organisations and federations are investing large amounts of money in creating programs and pathways to develop talent.
 In the context of team sports, the federations main talent development program is generally the youth national teams.
 For example, in basketball more than 250 national teams and 3000 players participate each summer in the male and female U16, U18, and U20 European youth championships [@FIBA2018].
-It has also generated a lot of interest from scholars and considerable amount of research has been done in the area [@Johnston2018].
+It has also generated significant interest from scholars, and considerable amount of research has been conducted within this field [@Johnston2018].
 
-Earlier research in both individual and team sports have shown that the national team programs are not characterised by an initial selection and then long-term nurturing of talented athletes; but rather of a dynamic re-selection process in which athletes are continuously selected and de-selected [@Barth2018; @Gullich2013].
-For example, only a bit over half of the athletes in German Olympic sports national team programs remained selected from one season to the next [@Gullich2012], while slightly more (59%) in the soccer youth national teams [@Gullich2013].
-Further, between half and two thirds of the players competing in youth national teams in soccer, volleyball, and handball were re-selected for the subsequent age category [@Barreiros2012-1; @Wrang2018].
+Previous research on both individual and team sports have shown that the national team programs are not characterised by an initial selection and then long-term nurturing of talented athletes, but rather of a dynamic process of selection, re-selection and de-selection [@Barth2018; @Gullich2013].
+For example, between 1992 and 1998 approximately half of the athletes in German Olympic sports national team programs remained selected from one season to the next [@Gullich2012], while slightly more (59%) in the male soccer youth national teams [@Gullich2013].
+Further, between half and two-thirds of the players competing in youth national teams in soccer, volleyball, and handball were re-selected for the subsequent age category [@Barreiros2012-1; @Wrang2018].
 
-While there are several studies on the proportion of re-selected players, there is, however, limited research on which factors might affect this process.
-In one of the few existing studies, @Wrang2018 found that players in the Danish male U19 handball national team born later had higher chances of being selected for the U21 team than their relatively older team-mates.
-This inverse relative age effect has also been found in the progression from youth to senior in other team sports [@Gil2020; @McCarthy2015].
-In basketball, [@Arrieta2016] showed that there exists a relative age effect in the European youth championship, where players born early in the year are overrepresented.
-However, this effect was smaller in the older age categories, which suggest the possibility of an inverse relative age effect on the re-selection process.
+While there are several studies on the proportion of players that gets re-selected, there is, however, limited research on which factors might affect the probability of getting re-selected.
+In one of the few existing studies, @Wrang2018 found that players in the Danish male U19 handball national team born later in the year, or a year later, had higher chances of being selected for the U21 team than their relatively older team-mates.
+This inverse relative age effect has also been found in the progression from youth to senior of initially selected players in other team sports [@Gil2020; @McCarthy2015].
+In basketball, [@Arrieta2016] showed that there exists a relative age effect in the European youth championship, where players born early in the year are overrepresented. However, this effect was smaller in the older age categories, which suggest the possibility of an inverse relative age effect on the re-selection process.
 
-Apart from the relative age effect, another factor that might influence the re-selection process is the age at which players debut in the youth national teams, as later debut age has been shown to increase chances of reaching the senior national team [@Schroepf2018].
+Apart from the relative age effect, another factor that might influence the re-selection process is the age at which players are selected into the youth national teams for the first time, as a later initial selection has been shown to increase chances of reaching the senior national team [@Schroepf2018].
 Earlier studies have also found that strategic and organizational factors influence talent development programs, and sporting success [@DeBosscher2015; @DeBosscher2017], which can reveal itself in a relationship between long term success and re-selection strategies.
 
 Although studied in other individual and team sports, the proportion of re-selected players has not been studied in basketball.
 Further, to our knowledge, only one previous study has analysed factors that might influence the re-selection process.
-Therefore, the aims of the study were to: (a) analyse the re-selection patterns in European youth basketball national teams, and (b) investigate how they are influenced by the debut age of the players, relative age effect, and long-term performance of the country at the youth level.
+Therefore, the aims of the study were to: (a) analyse the re-selection patterns in European youth basketball national teams, and (b) investigate how the chance of re-selection is influenced by the initial selection age and relative age of the players, as well as the long-term performance of the country at the youth level.
+We hypothesise that: (a) players initially selected at a later age will have a higher chance of re-selection, and (b) that amongst the selected players, players born later in the year will have a higher chance of re-selection.
+Due to the lack of previous research, we did not pose any hypothesis for the relationship between the county long-term performance and chance of re-selection.
 
 # Method
 
 ## Sample
 
 ```{r descriptives}
+tot_descriptives <- raw_data %>% 
+  filter(comp_year - birth_year >= 15) %>% 
+  distinct(id, gender, birth_year) %>% 
+  mutate(gender = tolower(gender))
+
 descriptives <- data %>% 
   distinct(id, gender, birth_year) %>% 
   mutate(gender = tolower(gender))
+
+
 ```
 
-The sample composed `r count(descriptives)` players (`r descriptives %>% count(gender) %>% glue_data("n {gender} = {n}", sep = ", ")`) born `r glue("{min(descriptives$birth_year)}--{max(descriptives$birth_year)}")` who have participated in at least one U16, U18 or U20 European youth basketball championship between `r min(data$birth_year + data$player_age - 1)` and `r max(data$birth_year + data$player_age)`.
-The players represented in total `r data %>% distinct(country) %>% count()` different countries, with male players from `r data %>% filter(gender == "Men") %>% distinct(country) %>% count()`, and female from `r data %>% filter(gender == "Women") %>% distinct(country) %>% count()` different ones.
+The sample composed `r count(tot_descriptives)` players (`r tot_descriptives %>% count(gender) %>% glue_data("{n} {gender} ", sep = ", ")`) born `r glue("{min(tot_descriptives$birth_year)}--{max(tot_descriptives$birth_year)}")` that had been selected and participated in at least one U16, U18 or U20 European youth basketball championship between `r min(data$birth_year + data$player_age - 1)` and `r max(data$birth_year + data$player_age)`.
+The players represented in total `r raw_data %>% distinct(country) %>% count()` different countries, with male players from `r raw_data %>% filter(gender == "Men") %>% distinct(country) %>% count()`, and female from `r raw_data %>% filter(gender == "Women") %>% distinct(country) %>% count()` different ones.
+Of these players, `r count(tot_descriptives) - count(descriptives)` were initially selected at age 20, and did therefore not participate in any youth national team re-selection process.
+They were therefore not included in the analysis.
 
 ## Variables and procedure
 
-The information about demographics of the participants (i.e., date of birth and country of each player, country ranking points) was gathered from the official data archive of the International Basketball Federation (archive.fiba.com).
-The ranking points are given separately for men and women based on the performance of the youth national teams over the last eight season. The ranking points were standardised within each gender to range from zero to one.
-
-Players born in January–March were categorised as quarter 1, April–June as quarter 2, July–September as quarter 3, and October–December as quarter 4.
-The players' age at each championship was calculated by subtracting the year of birth from the year of the championship. The players' first participation in a championship was recorded as their debut age.
+For each player, information about youth championship participations, date of birth, and nationality, together with the ranking points of the country was gathered from the official data archive of the International Basketball Federation (archive.fiba.com) in January 2020.
+Player age was calculated by subtracting the players year of birth from the year of the championship.
+To analyse the effect of relative age on the re-selection process, players born in January–March were categorised as quarter 1, April–June as quarter 2, July–September as quarter 3, and October–December as quarter 4.
+The players’ first participation in a championship was recorded as their initial selection age.
+As measure of country long-term performance, the ranking points of each country was used.
+The ranking points are given separately for men and women based on the performance of the youth national teams over the last eight seasons.
+The ranking points were standardised within each gender to range from zero to one.
 
 ## Data analysis
 
-For the analysis, ranking points were log-transform with base two and centred around its median within gender. Birth quarter was treated as a continuous variable and centred.
-Each possible combination of debut and player age was combined into a variable called category.
-Each observation corresponded to a potential re-selection for each player, with a dichotomous variable indicating if the player was re-selected or not.
-For example, a player that debuted at age 16 and played their last championship at age 18 would have three observations, one at age 17 indicating re-selection, one at 18 indicating re-selection, and one at 19 indicating no re-selection.
+For the analysis, we created one observation for each season a player had the chance to being re-selected, with a dichotomous variable indicating if the player was re-selected or not (re-selection = 1, de-selection = 0).
+For example, a player that was initially selected at age 16, participated at age 16 and 17, and de-selected at age 18, would have two observations; one at age 17 indicating re-selection and one at 18 indicating de-selection.
+As the ranking points were skewed, they were log-transform with base two and centred around its median within each gender.
+Birth quarter was treated as a continuous variable and centred.
 
-The descriptive statistics presented are the percentage of players that were re-selected from one season to another, and the percentage of debuted players who remained selected up until and including each player age.
+The number of players that were initially selected, participated, were re-selected and were de-selected are presented for each player age.
+The percentage of initially selected and participating players that are born in each quarter, and the percentage of players within each quarter that were re-selected or de-selected was calculated.
+Further, the percentage of players that were re-selected, and the percentage of selected players who remained selected up until and including each player age was calculated.
 
-The survival analysis was made by modelling the chance of re-selection using a Bayesian multilevel logistic regression [@Austin2017], with separate intercepts and effects men and women, ranking points and birth quarter as fixed effect parameters nested within gender and category as random effect parameters.
-Non-informative priors were chosen as not enough previous literature exist to justify more informed ones.
-Four different models were estimated, and their out-of-sample predictive performance was estimated using approximate leave-one-out cross-validation (LOO-IC), with lower values representing better performance.
-Model 1 included only the direct effects, model 2 an interaction between birth quarter and ranking points, model 3 the interaction between ranking points and category, and model 4 the interaction between birth quarter and category.
+The survival analysis was made by modelling the chance of re-selection using a Bayesian multilevel logistic regression [@Austin2017], with separate intercepts and effects men and women, ranking points and birth quarter as fixed effect parameters nested within gender, and the combination of initial selection age and player age as random effect (named category).
+Four different models were fitted to test for the existence of interactions between variables: no interaction (Model 1), birth quarter × ranking points (Model 2), ranking points × category (Model 3), and birth quarter × category (Model 4). 
+The models were compared using approximate leave-one-out cross-validation (LOO-IC), where lower values indicate better out-of-sample predictive performance.
 
 Prior predictive simulations were used to choose non-informative priors that assigned roughly equal probability on the outcome scale.
 The models were estimated using a Hamiltonian Monte Carlo algorithms with `r attr(model_3$stanfit@sim$samples[[1]],"args")$warmup` warm-up and `r attr(model_3$stanfit@sim$samples[[1]],"args")$iter - attr(model_3$stanfit@sim$samples[[1]],"args")$warmup` sampling iterations.
@@ -112,30 +131,75 @@ The model intercepts represent the log odds for men and women to get re-selected
 The parameters for ranking points represent the log odds ratio between bottom and top-ranked countries and for birth quarter the log odds ratio between one quarter and the subsequent.
 And for category the standard deviation in log odds between the different categories.
 
-Posterior predictive sampling was used for follow up analysis of relative chance (relative risk) to remain selected until age 20 for different debut ages, ranking points and birth quarters.
-The chance of remaining selected was calculated by multiplying the chance of re-selection for each player age.
+Posterior predictive sampling was used for follow-up analysis of relative chance (relative risk) to be re-selected until age 20 for the different initial selection ages, ranking points and birth quarters.
+The chance of re-selection until age 20 was calculated by multiplying the chance of re-selection for each player age.
 
 Compatibility intervals (CI) were calculated using the 95% highest-density intervals, representing the range in which the value lies with a 95% probability.
-All data preparation and statistical analysis were made in R `r getRversion()` and Stan `r rstan::stan_version()`. The data and analysis are available at [Open Science framework doi].
+All data preparation and statistical analysis were made in R `r getRversion()` and Stan `r rstan::stan_version()`. The data and analysis are available in Open Science framework at [doi].
 
 # Results
 
+The number of players who were initially selected, participated, were re-selected, and were de-selected at each age are presented in Figure \@ref(fig:flowchart-fig), with the percentage of the selected and participating players born in each quarter, as well as the proportion of players born each quarter that was re-selected or de-selected.
 The proportion of players re-selected are presented in Table \@ref(tab:descriptive).
-When comparing the models, Model 3 showed the lowest relative LOO-IC of the four models compared.
-All the following results are therefore based on Model 3.
-The model coefficients are presented in Table \@ref(tab:model3-table); for a full table of model coefficients and LOO-IC, see Supplementary Material 1.
 
-The model coefficients and the effects excluded suggest that the chance of re-selection varies between debut and player ages; that there is a positive relationship between later birth quarter and higher chance of re-selection, with equal effect across debut and player age; and that there is a positive relationship between higher ranking points and higher chance of re-selection for women, and possibly for men, with different effect for different debut and player ages.
-
-When taking into account the influence of the other variables, it is unclear if there is a difference in re-selection chance between genders (intercept).
-The relationship between ranking points and re-selection chance is likely more substantial in women than men.
-The relationship between birth quarter and re-selection is similar for both genders.
+```{r flowchart-fig, fig.cap="Flowchart of initial selection, participation, re-selection and de-selection in the European basketball youth championships. For initial selection and participation, percentage indicate distribution between birth quarters. For re-selection and de-selection, percentage indicate proportion of players within each birth quarter."}
+figure_1_data %>% 
+  mutate(
+    across(
+      initial_selection_n:de_selection_Q4, 
+      ~round(.x, digits = 0)
+    )
+  ) %>% 
+  transmute(
+    gender,
+    player_age,
+    initial_selection = glue("N = {initial_selection_n}
+                              Q1  Q2  Q3  Q4
+                              {initial_selection_Q1}% {initial_selection_Q2}% \\
+                              {initial_selection_Q3}% {initial_selection_Q4}%"),
+    participation = glue("N = {participation_n}
+                              Q1  Q2  Q3  Q4
+                              {participation_Q1}% {participation_Q2}% \\
+                              {participation_Q3}% {participation_Q4}%"),
+    re_selection = glue("N = {re_selection_n}
+                              Q1  Q2  Q3  Q4
+                              {re_selection_Q1}% {re_selection_Q2}% \\
+                              {re_selection_Q3}% {re_selection_Q4}%"),
+    de_selection = glue("N = {de_selection_n}
+                              Q1  Q2  Q3  Q4
+                              {de_selection_Q1}% {de_selection_Q2}% \\
+                              {de_selection_Q3}% {de_selection_Q4}%")
+  ) %>% 
+  pivot_longer(cols = initial_selection:de_selection) %>% 
+  filter(!(name %in% c("re_selection", "de_selection") & player_age == 20)) %>% 
+  ggplot(aes(x = name, y = player_age, label = value)) +
+    geom_label(size = 1.7) +
+    facet_wrap(~gender) +
+    scale_x_discrete(
+      name = NULL,
+      limits = c(
+        "initial_selection",
+        "participation",
+        "re_selection",
+        "de_selection"
+      ),
+      labels = c(
+        "initial_selection" = "Initial selection",
+        "participation" = "Participation",
+        "re_selection" = "Re-selection",
+        "de_selection" = "De-selection"
+      ),
+      guide = guide_axis(n.dodge = 2)
+    ) +
+    ylab(NULL) +
+    theme_minimal()
+```
 
 ```{r descriptive}
 table_1 %>% 
   select(-gender) %>% 
   kable(
-    col.names = c("Debut", "n", 16:20, "Mean", 16:20),
+    col.names = c("Initial selection", "n", 16:20, "Mean", 16:20),
     caption = "Season-to-season and cumulative reselection proportion by debut and age",
     digits = 1,
     booktabs = TRUE
@@ -145,12 +209,24 @@ table_1 %>%
       c(
       "",
       "",
-      "Reselection percentage" = 6, 
+      "Re-selection percentage" = 6, 
       "Cumulative percentage" = 5
       )
   ) %>% 
   pack_rows(index = c("Men" = 6, "Women" = 6))
 ```
+
+The ranking points × category interaction model (Model 3) showed the best out-of-sample predictive performance and was the only one that outperformed the no interaction model (Model 1).
+All the following results are therefore based on the ranking points × category interaction model. The model coefficients are presented in Table \@ref(tab:model3-table).
+For coefficients and out-of-sample performance of all models, see Supplementary Material 1.
+
+The model coefficients and the interactions excluded suggest that the chance of re-selection varies between different initial selection ages and player ages.
+That there is a positive relationship between later birth quarter and higher chance of re-selection, with equal effect across initial selection age and player age.
+And that there is a positive relationship between higher ranking points and higher chance of re-selection for women, and possibly for men, with different effect for different initial selection age and player age.
+
+When controlling for birth quarter, ranking point and category, it is unclear if there is a difference in re-selection chance between genders (intercept). 
+The relationship between ranking points and re-selection chance is likely more substantial in women than men.
+The relationship between birth quarter and re-selection is similar for both genders.
 
 ```{r model3-table}
 table_2 %>% 
@@ -158,7 +234,7 @@ table_2 %>%
     .,
     col.names = c("", "Est", "LL", "UL", "Diff", "LL", "UL"),
     digits = 2,
-    caption = "Coefficient of Model 3 and difference between genders",
+    caption = "Coefficient of final model and difference between genders.",
     booktabs = TRUE
   ) %>% 
     kable_styling() %>% 
@@ -173,20 +249,22 @@ table_2 %>%
   )
 ```
 
-## Debut age
 
-The relative chance of remaining selected until age 20 between different debut ages are presented in Table \@ref(tab:debut-rr).
-For men, the chance of remaining selected until the age of 20 is lower for players debuting at age 16 compared to all other ages.
-In general, there tends to be a higher chance for players debuting at 15, 17 and 19 compared to 16 and 18.
-For women, the chance for players debuting at 15 is higher compared to all other ages.
-The chance for debut ages 17, 18 and 19 seem to be similar to each other.
-The chance of remaining selected over the years for each debut age can be seen in Figure \@ref(fig:debut-fig).
+## Initial selection age
+
+The relative chance of re-selection until age 20 between different initial selection ages are presented in Table \@ref(tab:debut-rr).
+For men, the chance of re-selection until age 20 is lower for players initially selected at age 16 compared to all other ages.
+In general, there is a higher chance for players initially selected at age 15, 17 and 19 compared to age 16 and 18.
+For women, the chance for players initially selected at age 15 is higher compared to all other ages.
+The chance for players initially selected at age 17, 18 and 19 is similar to each other.
+The chance of remaining re-selected over the years for initial selection age is presented in Figure \@ref(fig:debut-fig).
+
 
 ```{r debut-rr}
 table_3 %>% 
   kable(
-    col.names = c("Debut", "RC", "LL", "UL", "RC", "LL", "UL"),
-    caption = "Relative chance of remaining selected until age 20 between different debut ages",
+    col.names = c("Initial selection", "RC", "LL", "UL", "RC", "LL", "UL"),
+    caption = "Relative chance of re-selection until age 20 between different initial selection ages",
     digits = 2,
     booktabs = TRUE
   ) %>% 
@@ -194,7 +272,7 @@ table_3 %>%
   add_header_above(c("", "", "95% CI" = 2, "", "95% CI" = 2)) %>% 
   add_header_above(c("", "Men" = 3, "Women" = 3)) %>% 
   footnote(
-    general = "RC = Relative chance of re-selection between debut ages; CI = Confidence interval; LL = Lower Limit; UL = Upper Limit; Diff = Difference between coefficient for men and women.",
+    general = "RC = Relative chance of re-selection until age 20 between initial selection ages; CI = Confidence interval; LL = Lower Limit; UL = Upper Limit.",
     footnote_as_chunk = TRUE,
     threeparttable = TRUE,
     fixed_small_size = TRUE
@@ -202,44 +280,69 @@ table_3 %>%
 
 ```
 
-```{r debut-fig, fig.asp=.4, fig.cap="Chance of remaining selected by debut age, with 95% compatibility interval. Grey lines indicate chance of remaining for all players."}
-figure_1
-
-```
-
-## Birth quarter
-
-```{r}
-birth_q <- birth_quarter_results %>% 
-  mutate_if(is.numeric, ~formatC(round(., digits = 2), digits = 2, format = "f"))
-
-```
-
-
-For men, the estimated marginal chance of remaining selected until 20 for players born in quarter 1 is `r birth_q %>% filter(gender == "Men") %>% glue_data("{value_q1} 95% CI [{.lower_q1}, {.upper_q1}]")`, and for players born in quarter 4 it is `r birth_q %>% filter(gender == "Men") %>% glue_data("{value_q4} 95% CI [{.lower_q4}, {.upper_q4}]")`.
-Players born in quarter 4 have `r birth_q %>% filter(gender == "Men") %>% pull(rr)` times higher chance of remaining selected compared to players born in quarter 1 `r birth_q %>% filter(gender == "Men") %>% glue_data("95% CI [{.lower_rr}, {.upper_rr}]")`.
-For women, the estimated marginal chance of remaining selected until 20 for players born in quarter 1 is `r birth_q %>% filter(gender == "Women") %>% glue_data("{value_q1} 95% CI [{.lower_q1}, {.upper_q1}]")`, and for players born in quarter 4 it is `r birth_q %>% filter(gender == "Women") %>% glue_data("{value_q4} 95% CI [{.lower_q4}, {.upper_q4}]")`.
-Players born in quarter 4 have `r birth_q %>% filter(gender == "Women") %>% pull(rr)` times higher chance of remaining selected compared to players born in quarter 1 `r birth_q %>% filter(gender == "Women") %>% glue_data("95% CI [{.lower_rr}, {.upper_rr}]")`.
-The chance of remaining selected over the years in top and bottom-ranked countries can be seen in Figure \@ref(fig:quarter-fig).
-
-```{r quarter-fig, fig.asp=.45, fig.cap="Chance of remaining selected for players born in quarter 1 and 4, with 95% compatibility interval."}
-
+```{r debut-fig, fig.asp=.4, fig.cap="Chance of re-selection until age 20 by age at first selection, with 95% compatibility interval. Grey lines indicate chance of remaining re-selected for all players."}
 figure_2
 
 ```
 
+## Relative age effect
 
-## Ranking points
+The estimated marginal chance of re-selection until age 20 for players born in quarter 1 and quarter 4, together with the relative chance is presented in Table \@ref(tab:birth-quarter-rr).
+Players born in quarter 4 have a higher chance of re-selection until age 20 than players born in quarter 1 in both genders and all initial selection ages.
+The chance of re-selection until age 20 over the years for quarter 1 and 4 can be seen in Supplementary material 2.
 
-The estimated marginal chance of remaining selected until 20 in top and bottom-ranked countries, together with the relative chance is presented in Table \@ref(tab:ranking-points-rr). For men, players in top-ranked countries have a higher chance of remaining selected until 20 than players from bottom-ranked teams when debuting at age 16 or 19. For women, the higher players in top-ranked countries have a higher chance of remaining selected until 20 than players from bottom-ranked teams for all debut ages. The chance of remaining selected over the years in top and bottom-ranked countries can be seen in Figure \@ref(fig:ranking-fig).
-
-```{r ranking-points-rr}
+```{r birth-quarter-rr}
 
 table_4 %>% 
   select(-gender) %>% 
   kable(
-    col.names = c("Debut", rep(c("Est", "LL", "UL"), 2), "RC", "LL", "UL"),
-    caption = "Relative chance of remaining selected until age 20 between top and bottom-ranked countries",
+    col.names = c("Initial selection", rep(c("Est", "LL", "UL"), 2), "RC", "LL", "UL"),
+    caption = "Relative chance of re-selection until age 20 between players born in quarter 4 and quarter 1",
+    digits = 2,
+    booktabs = TRUE
+  ) %>% 
+  kable_styling() %>% 
+  add_header_above(
+    c(
+      "",
+      "",
+      "95% CI" = 2,
+      "",
+      "95% CI" = 2,
+      "",
+      "95% CI" = 2
+    )
+  ) %>% 
+  add_header_above(c("", "Quarter 4" = 3, "Quarter 1" = 3, "Q4 / Q1" = 3)) %>% 
+  pack_rows(
+    index = c(
+      "Men" = 5, 
+      "Women" = 5
+    )
+  ) %>% 
+  footnote(
+    general = "Est = Estimated chance of re-selection until age 20; RC = Relative chance of re-selection until age 20 between birth quarters; CI = Confidence interval; LL = Lower Limit; UL = Upper Limit.",
+    footnote_as_chunk = TRUE,
+    threeparttable = TRUE,
+    fixed_small_size = TRUE
+  )
+
+```
+
+## Country long-term performance
+
+The estimated marginal chance of re-selection until age 20 in top and bottom-ranked countries, together with the relative chance is presented in Table \@ref(tab:ranking-points-rr).
+For men, players in top-ranked countries have a higher chance of re-selection until age 20 than players from bottom-ranked teams when initially selected at age 16 or 19.
+For women, the players in top-ranked countries have a higher chance of re-selection until age 20 than players from bottom-ranked teams regardless of initial selection age.
+The chance of re-selection until age 20 over the years in top and bottom-ranked countries can be seen in Supplementary material 2.
+
+```{r ranking-points-rr}
+
+table_5 %>% 
+  select(-gender) %>% 
+  kable(
+    col.names = c("Initial selection", rep(c("Est", "LL", "UL"), 2), "RC", "LL", "UL"),
+    caption = "Relative chance of re-selection until age 20 between top and bottom-ranked countries.",
     digits = 2,
     booktabs = TRUE
   ) %>% 
@@ -263,7 +366,7 @@ table_4 %>%
     )
   ) %>% 
   footnote(
-    general = "Est = Estimated re-selection chance; RC = Relative chance of re-selection between debut ages; CI = Confidence interval; LL = Lower Limit; UL = Upper Limit.",
+    general = "Est = Estimated chance of re-selection until age 20; RC = Relative chance of re-selection until age 20 between top and bottom ranked countries; CI = Confidence interval; LL = Lower Limit; UL = Upper Limit.",
     footnote_as_chunk = TRUE,
     threeparttable = TRUE,
     fixed_small_size = TRUE
@@ -271,76 +374,85 @@ table_4 %>%
 
 ```
 
-```{r ranking-fig, fig.asp=.45, fig.cap="Chance of remaining selected in top and bottom-ranked countries by debut age, with 95% compatibility interval."}
-
-figure_3
-
-```
-
 # Discussion
 
 This study aimed to analyse what factors influence the re-selection process in European youth basketball national teams.
-We found that overall, around 74% of male and 80% of female players participating in a European championship were re-selected the following season, and around 40% of the players remained selected until the last year of youth championships.
-The re-selection probability was affected by the debut age, the ranking of the country and an inverse relative age effect.
+We found that overall, around 74% of male and 80% of female players participating in a European championship were re-selected the following season, and around 40% of the players were continuously re-selected until the last year of youth championships.
+The re-selection probability was influenced by the initial selection age, the ranking of the country and an inverse relative age effect.
 
 The observed re-selection of around 74-80% is substantially higher than the 40-55% reported in German and Portuguese male football, as well as female volleyball national teams [@Barreiros2012-2; @Gullich2013].
 However, it is rather close to the reported value in Danish male handball national teams, where around 65% were re-selected over two seasons [@Wrang2018].
 As there is still a high probability that players included in the sample can still make their senior national team debut, it was not considered in this study.
-However, looking at the roughly 40% of players who remained selected until age 20, it is very similar to the junior-to-senior re-selection seen in various sports, including basketball [@Barreiros2012-2; @LopezSubijana2018; @Wrang2018].
+However, looking at the roughly 40% of players who were re-selection until age 20, it is very similar to the junior-to-senior re-selection seen in various sports, including basketball [@Barreiros2012-2; @LopezSubijana2018; @Wrang2018].
 
-As for the influence of debut age, female players debuting at age 15 had a higher chance of remaining selected compared to all later debut ages.
-It is also noteworthy that over 20% of the female players had debuted at age 15, while less than 8% of the males had.
-This is in line with previously found earlier debut age and a higher number of youth championships for female national team athletes compared to their male counterparts [@Barreiros2012-2; @Kalen2017].
+## Initial selection age
+
+As for the influence of age at initial selection, the results did not support our hypothesis that older selection age relates to higher re-selection chance.
+Female players initially selected at age 15 had a higher chance of being re-selection until age 20 compared to all later initial selection ages.
+It is also noteworthy that over 20% of the female players had been initially selected at age 15, while less than 8% of the males had.
+This is in line with previously found earlier initial selection age and a higher number of youth championships for female national team athletes compared to their male counterparts [@Barreiros2012-2; @Kalen2017].
 Further, there were substantially fewer females than males selected at any time in the included sample.
-These results suggest that talented female basketball players are identified and selected earlier and remain selected to a higher degree.
-Male players had a higher chance of remaining selected if they debuted at age 15, 17 or 19.
+These results suggest that talented female basketball players are identified and selected earlier and are re-selected to a higher degree.
+
+Male players had a higher chance of being re-selected until age 20 if they were initially selected at age 15, 17 or 19.
 As the European championships are played in U16, U18 and U20 categories, these are the years in which a player is underaged and will play against players one year older.
 Similarily, @Wrang2018 found that Danish handball players playing in the U19 European championship at age 18 were more likely to be re-selected for the U21, and in U21 at age 20 more likely to reach the senior national team.
 In basketball, @Steingrover found underrepresentation of underage players in the German U16, but not U19 league, in line with our results.
 This constituent year effect is the between-years equivalence to the within-year relative age effect [@Steingrover].
 
-Regarding the relative age effect, the results of our study showed that players born in the last quarter were 20-25% more likely to remain selected until age 20, compared to players born in the first quarter.
-This supports the notion that the reduction of relative age effect in older age groups [@Arrieta2016] is, at least partly, driven by relatively younger players getting re-selected at a higher rate than their relatively older counterparts.
-The same higher re-selection rate of relatively younger players has also been shown in national team handball [@Wrang2018].
-Moreover, studies in cricket, rugby and soccer revealed relatively younger players to have a higher chance at reaching senior professional level [@Gil2020; @McCarthy2015].
-However, it is important to note that although relatively younger players have a higher chance of re-selection, there is still a substantial relative age effect in the initial selection of the players [@Arrieta2016].
+## Relative age effect
 
-Two main hypotheses have been proposed to explain the higher success rate of relatively younger players, both regarding relative and constituent year effect.
+We observed, in line with the relative age effect seen in earlier studies on youth national team players, a higher proportion of participating players born in the first two quarters of the year [@Arrieta2016].
+The analysis of re-selection, however, showed that players born in the last quarter were 20-25% more likely to be re-selected until age 20, compared to players born in the first quarter.
+This is in line with our hypothesis of an inverse relative-age effect in the re-selection process. It also supports the suggestion that the reduction of relative age effect in older age groups [@Arrieta2016] is, at least partly, driven by selected relatively younger players getting re-selected at a higher rate than their relatively older counterparts.
+The same higher re-selection rate of relatively younger players has also been shown in national team handball [@Wrang2018].
+Moreover, studies in cricket, rugby and soccer revealed that, while relatively older players have a higher chance of initially getting selected, the relatively younger players who do manage to get selected have a higher chance at reaching senior professional level than their relatively older selected peers [@Gil2020; @McCarthy2015].
+
+Two main hypotheses have been proposed to explain the higher success rate of relatively younger players (when comparing selected players), both regarding relative and constituent year effect.
 The first one is the underdog hypothesis, in which it is thought that for selected relatively younger players to be able to compete against the more mature ones, they need to have or develop superior psychological skills to be able to cope with playing against relatively older and more mature players [@Cumming2018].
 However, there is currently weak support for this hypothesis, as relative age has not been shown to relate to self-regulation, nor physiological maturation [@Cumming2018].
-An alternative hypothesis is that the relatively younger players who are selected perform as well as their relatively older peers, as their superior skills compensate for the maturity disadvantage.
+
+An alternative hypothesis is that the relatively younger players who manage to get selected perform as well as their relatively older peers since their superior skills compensate for the maturity disadvantage.
 As the players grow older, the maturity difference gets smaller and eventually disappears, and the relatively older players who relied on the maturity advantage do not perform as well [@Fumarco2017; @Gil2020].
 In other words, relatively younger players are to a higher degree selected based on factors relevant to the performance at the senior level; the talent identification and selection process work better on relatively younger players.
+In other words, relatively younger players are to a higher degree initially selected based on factors relevant to the performance at the senior level; the talent identification and selection process work better on relatively younger players.
 This hypothesis is partly supported by the lack of correlation between performance and birth month in women’s European youth basketball championships [@Arrieta2016].
 However, in the same study, small but significant correlations were found for men, providing some evidence against it.
 
-Comparing top to bottom-ranked countries, we found that male players debuting at age 16 and 19 were 30% and 45% more likely to remain selected until age 20 if they come from top compared to bottom-ranked countries.
-This effect is even more evident for women, where the re-selection chance was 40-55% higher in top-ranked countries for all debut ages.
+## Country long-term performance
+
+Comparing top to bottom-ranked countries, we found that male players initially selected at age 16 and 19 were 30% and 45% more likely to be continuously re-selected until age 20 if they come from top compared to bottom-ranked countries.
+This effect is even more evident for women, where the re-selection chance was 40-55% higher in top-ranked countries for all initial selection ages.
 It is worth to note that as ranking points are based on their results in the European youth championships over the last eight years, higher rank indicates that the country consistently performs better at the youth level.
 It has been shown that, at the senior level, a higher amount of experience from previous championships is related to higher performance in the European basketball championships [@Kalen2017].
 There may exist a similar relationship at the youth level, which could mean that a higher re-selection of players results in better performance over time.
 However, it is also possible that if a team performs well, it is more likely that these players will be selected the following year.
 
-Another explanation could be that the re-selection proportion and long-term performance are both influenced by underlying factors, such as the structure and strategy of the national team programs.
+Another potential explanation is that the re-selection proportion and long-term performance are both influenced by underlying factors, such as the structure and strategy of the national team programs.
 Earlier studies have shown that there are differences in talent development programs between countries [@DeBosscher2017], and that better organization and structure is related to higher sporting success [@DeBosscher2015].
-Therefore, it can be expected that better organised national team programs with a long-term strategy both perform better over time and have a higher re-selection rate, as coaches across age groups select based on common criteria.
-The fact that the country’s ranking affects the re-selection chance more in women could support this explanation.
-As there are generally fewer resources invested in women’s player development outside the national teams, the impact of a well-organised program should be higher than for men.
+We could, therefore, suspect that better organised national team programs with a long-term strategy could both perform better over time and have a higher re-selection rate.
+For example, if the program keeps the same base of coaches for several years, they might gain valuable experience on how to make the teams perform well.
+And the coaches’ preference for certain players can increase the amount of re-selected players.
+Programs that have a clearer idea of their goals, style of play and what type of players they are selecting can possibly both achieve greater performance, and select players perceived to be able to remain longer in the program.
+The fact that the country's ranking affects the re-selection chance more in women could support this explanation.
+As there are generally fewer resources invested in women's player development outside the national teams, the impact of a well-organised program should be higher than for men. 
+
+## Limitations and future studies
 
 One limitation in the present study is that it did not measure the percentage of players who were selected for the senior national teams.
 The connection between the player development process and the final senior success is of high interest.
 However, this study focused on the factors influencing the dynamics of the re-selection process during the talent development phase.
 Another limitation is that the player’s performance in the championships was not considered as a factor in the re-selection process in this study.
-Our results suggest that re-selection process is complex and, although we found debut age, relative age, and country rank to influence it, there are probably more factors affecting the process.
+Our results suggest that re-selection process is complex and, although we found initial selection age, relative age, and country long-term performance to influence it, there are probably more factors affecting the process.
 For example, future studies should analye the role of the player’s performance in the chance of getting re-selected.
 Another potential line of research is to study how the country’s selection strategies in the youth national team programs affect at the senior level. 
 
 # Conclusions
 
-The results of the present study show that the re-selection process by which players progress in European youth national basketball teams is complex and influenced by debut age, relative age effect, and the country rank, with some differences between men and women.
+The results of the present study show that the re-selection process by which players progress in European youth national basketball teams is complex and influenced by initial selection age, inverse relative age effect, and the country long-term performance, with some differences between men and women. 
 Overall, around 75% of male, and 80% of female players participating in a championship were re-selected the following year, which is higher than previously found in other team sports.
-We found an inverse relative age effect where players born in quarter 4 were 25% more likely to remain selected until the last youth championship than players in quarter 1.
-Similarly, we found an inverse constituent year effect for men, where players debuting as underaged (age 15, 17 and 19 in U16, U18 and U20 respectively) were more likely to remain selected.
+We found an inverse relative age effect where players born in quarter 4 more likely to be continuously re-selected until the last year of youth championship than players in quarter 1, regardless of initial selection age or gender.
+Similarly, we found an inverse constituent year effect for men, where players initially selected as underaged (age 15, 17 and 19 in U16, U18 and U20 respectively) were more likely to be continuously re-selected until age 20.
 Further, the higher re-selection in top compared to bottom-ranked countries, especially in women, suggest that there might be underlying organizational and strategical factors influencing both selection strategies and long-term performance of the youth national teams.
 
 

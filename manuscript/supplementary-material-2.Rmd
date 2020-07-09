@@ -1,0 +1,28 @@
+---
+output: pdf_document
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(kableExtra)
+library(knitr)
+
+# Options
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(knitr.kable.NA = '')
+
+# Load drake components
+drake::loadd(supplementary_figure_1)
+drake::loadd(supplementary_figure_2)
+```
+
+# Supplementary material 2 {-}
+
+```{r fig1, fig.asp=.4, fig.cap="Chance of remaining selected for players born in quarter 1 and 4, with 95% compatibility interval."}
+supplementary_figure_1
+```
+
+\vspace{4em}
+
+```{r fig2, fig.asp=.4, fig.cap="Chance of remaining selected in top and bottom-ranked countries by debut age, with 95% compatibility interval."}
+supplementary_figure_2
+```

@@ -1,7 +1,7 @@
 The influence of debut age, relative age effect and country rank on the
 re-selection process in European basketball youth national teams
 ================
-2020-04-27
+2020-07-09
 
 This is repo for the article “The influence of debut age, relative age
 effect and country rank on the re-selection process in European
@@ -43,16 +43,16 @@ The project has the following organisation:
 
 ## Workflow information
 
-The workflow was last ran 2020-04-27 and with the following session
+The workflow was last ran 2020-07-09 and with the following session
 info.
 
-    ## R version 3.6.3 (2020-02-29)
-    ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-    ## Running under: macOS Catalina 10.15.4
+    ## R version 4.0.0 (2020-04-24)
+    ## Platform: x86_64-apple-darwin17.0 (64-bit)
+    ## Running under: macOS Catalina 10.15.5
     ## 
     ## Matrix products: default
-    ## BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
-    ## LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
+    ## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
     ## 
     ## locale:
     ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -61,11 +61,13 @@ info.
     ## [1] stats     graphics  grDevices datasets  utils     methods   base     
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] Rcpp_1.0.4        igraph_1.2.5      rstudioapi_0.11   magrittr_1.5     
-    ##  [5] hms_0.5.3         progress_1.2.2    R6_2.4.1          rlang_0.4.5      
-    ##  [9] fansi_0.4.1       storr_1.2.1       tools_3.6.3       parallel_3.6.3   
-    ## [13] cli_2.0.2         ellipsis_0.3.0    base64url_1.4     digest_0.6.25    
-    ## [17] assertthat_0.2.1  tibble_3.0.0      lifecycle_0.2.0   crayon_1.3.4     
-    ## [21] txtq_0.2.0        vctrs_0.2.4       fst_0.9.2         glue_1.3.2       
-    ## [25] drake_7.12.0      compiler_3.6.3    pillar_1.4.3      filelock_1.0.2   
-    ## [29] backports_1.1.6   prettyunits_1.1.1 renv_0.9.3        pkgconfig_2.0.3
+    ##  [1] Rcpp_1.0.4.6      compiler_4.0.0    pillar_1.4.4      prettyunits_1.1.1
+    ##  [5] tools_4.0.0       progress_1.2.2    digest_0.6.25     evaluate_0.14    
+    ##  [9] tibble_3.0.1      lifecycle_0.2.0   pkgconfig_2.0.3   rlang_0.4.6      
+    ## [13] igraph_1.2.5      cli_2.0.2         rstudioapi_0.11   filelock_1.0.2   
+    ## [17] yaml_2.2.1        parallel_4.0.0    xfun_0.14         storr_1.2.1      
+    ## [21] stringr_1.4.0     knitr_1.28        vctrs_0.3.1       hms_0.5.3        
+    ## [25] drake_7.12.2      glue_1.4.1        R6_2.4.1          fansi_0.4.1      
+    ## [29] base64url_1.4     rmarkdown_2.3     txtq_0.2.0        magrittr_1.5     
+    ## [33] backports_1.1.8   htmltools_0.5.0   ellipsis_0.3.1    fst_0.9.2        
+    ## [37] assertthat_0.2.1  renv_0.10.0       stringi_1.4.6     crayon_1.3.4

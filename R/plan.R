@@ -195,36 +195,26 @@ plan <- drake::drake_plan(
     .width = ci_width
   ),
 
+
   table_4 = create_table_4(
+    draws = draws_birth_quarter,
+    .width = ci_width
+  ),
+
+  table_5 = create_table_5(
     draws = draws_points,
     .width = ci_width
   ),
 
   # Figures
 
-  figure_1 = create_figure_1(
+  figure_1_data = create_figure_1_data(raw_data),
+
+  figure_2 = create_figure_2(
     data = data,
     draws = draws_gender,
     .width = ci_width,
     theme = plot_theme
-  ),
-
-  figure_2 = create_figure_2(
-    draws = draws_birth_quarter,
-    .width = ci_width,
-    theme = plot_theme
-  ),
-
-  figure_3 = create_figure_3(
-    draws = draws_points,
-    .width = ci_width,
-    theme = plot_theme
-  ),
-
-  # Text results
-  birth_quarter_results = create_quarter_results(
-    draws = draws_birth_quarter,
-    .width = ci_width
   ),
 
   # Supplementary material
@@ -234,6 +224,19 @@ plan <- drake::drake_plan(
     .width = ci_width,
     var_names = var_names
   ),
+
+  supplementary_figure_1 = create_supplementary_figure_1(
+    draws = draws_birth_quarter,
+    .width = ci_width,
+    theme = plot_theme
+  ),
+
+  supplementary_figure_2 = create_supplementary_figure_2(
+    draws = draws_points,
+    .width = ci_width,
+    theme = plot_theme
+  ),
+
 
   # Write outputs -----------------------------------------------------------
 
@@ -245,7 +248,8 @@ plan <- drake::drake_plan(
         table_2,
         table_3,
         table_4,
-        birth_quarter_results,
+        table_5,
+        figure_1_data,
         supplementary_table
       ),
       path = c(
@@ -253,7 +257,8 @@ plan <- drake::drake_plan(
         "output/table_2.csv",
         "output/table_3.csv",
         "output/table_4.csv",
-        "output/birth_quarter_results.csv",
+        "output/table_5.csv",
+        "output/figure_1_data.csv",
         "output/supplementary_table.csv"
       )
     )
@@ -270,8 +275,12 @@ plan <- drake::drake_plan(
       fallback_resolution = 1200
     ),
     transform = map(
-      plot = c(figure_1, figure_2, figure_3),
-      filename = c("figure_1.eps", "figure_2.eps", "figure_3.eps")
+      plot = c(figure_2, supplementary_figure_1, supplementary_figure_2),
+      filename = c(
+        "figure_2.eps",
+        "supplementary_figure_1.eps",
+        "supplementary_figure_2.eps"
+      )
     )
   ),
 
@@ -284,9 +293,16 @@ plan <- drake::drake_plan(
   ),
 
   # Supplementary material
-  suppl_material = rmarkdown::render(
-    knitr_in("manuscript/supplementary-material.Rmd"),
-    output_file = file_out("manuscript/supplementary-material.pdf"),
+  suppl_material_1 = rmarkdown::render(
+    knitr_in("manuscript/supplementary-material-1.Rmd"),
+    output_file = file_out("manuscript/supplementary-material-1.pdf"),
+    output_dir = "manuscript",
+    quiet = TRUE
+  ),
+
+  suppl_material_2 = rmarkdown::render(
+    knitr_in("manuscript/supplementary-material-2.Rmd"),
+    output_file = file_out("manuscript/supplementary-material-2.pdf"),
     output_dir = "manuscript",
     quiet = TRUE
   )
